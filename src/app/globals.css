@@ -1,26 +1,231 @@
 @import "tailwindcss";
 
+/* Simulated Life — "night council" identity: deep space, luminous member colours. */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --bg: #070a1a;
+  --bg-2: #0d1230;
+  --panel: rgba(18, 24, 58, 0.72);
+  --panel-solid: #121838;
+  --border: rgba(148, 163, 255, 0.16);
+  --border-strong: rgba(148, 163, 255, 0.32);
+  --text: #eef0ff;
+  --muted: #a7aed8;
+  --faint: #8a92c4;
+  --prime: #ffd36e;
+  --accent: #8b7bff;
+  --challenge: #ff8a5b;
+  --support: #4ade9a;
+  --refine: #5cc8ff;
+  --reply: #c4a1ff;
+  --danger: #ff6b7a;
+  --warn: #ffc857;
+  color-scheme: dark;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-bg: var(--bg);
+  --color-bg-2: var(--bg-2);
+  --color-panel: var(--panel);
+  --color-panel-solid: var(--panel-solid);
+  --color-line: var(--border);
+  --color-line-strong: var(--border-strong);
+  --color-ink: var(--text);
+  --color-muted: var(--muted);
+  --color-faint: var(--faint);
+  --color-prime: var(--prime);
+  --color-accent: var(--accent);
+  --color-challenge: var(--challenge);
+  --color-support: var(--support);
+  --color-refine: var(--refine);
+  --color-reply: var(--reply);
+  --color-danger: var(--danger);
+  --color-warn: var(--warn);
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-grotesk), var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html,
+body {
+  background: var(--bg);
+  color: var(--text);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  min-height: 100dvh;
+  background:
+    radial-gradient(1200px 600px at 15% -10%, rgba(139, 123, 255, 0.22), transparent 60%),
+    radial-gradient(900px 500px at 100% 0%, rgba(92, 200, 255, 0.12), transparent 60%),
+    radial-gradient(800px 600px at 50% 110%, rgba(255, 143, 203, 0.1), transparent 60%),
+    var(--bg);
+  background-attachment: fixed;
+}
+
+/* Static star field (decorative). */
+.starfield {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    radial-gradient(1px 1px at 12% 22%, rgba(255, 255, 255, 0.55), transparent 60%),
+    radial-gradient(1px 1px at 72% 12%, rgba(255, 255, 255, 0.45), transparent 60%),
+    radial-gradient(1.5px 1.5px at 42% 64%, rgba(255, 255, 255, 0.35), transparent 60%),
+    radial-gradient(1px 1px at 88% 78%, rgba(255, 255, 255, 0.4), transparent 60%),
+    radial-gradient(1px 1px at 22% 86%, rgba(255, 255, 255, 0.3), transparent 60%),
+    radial-gradient(1px 1px at 58% 34%, rgba(255, 255, 255, 0.35), transparent 60%);
+  background-size: 640px 640px;
+  opacity: 0.7;
+  z-index: 0;
+}
+
+@layer components {
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+:focus-visible {
+  outline: 2px solid var(--prime);
+  outline-offset: 2px;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  border-radius: 0.65rem;
+  padding: 0.45rem 0.8rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  border: 1px solid var(--border-strong);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text);
+  transition: background 0.15s, border-color 0.15s, transform 0.1s;
+}
+.btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.09);
+  border-color: rgba(200, 210, 255, 0.5);
+}
+.btn:active:not(:disabled) {
+  transform: translateY(1px);
+}
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.btn-primary {
+  background: linear-gradient(135deg, #8b7bff, #5cc8ff);
+  border-color: transparent;
+  color: #0a0d24;
+}
+.btn-primary:hover:not(:disabled) {
+  background: linear-gradient(135deg, #9d8fff, #7ad3ff);
+}
+.btn-danger {
+  border-color: rgba(255, 107, 122, 0.55);
+  color: #ffc2c9;
+}
+.btn-prime {
+  border-color: rgba(255, 211, 110, 0.6);
+  color: var(--prime);
+}
+.btn-sm {
+  padding: 0.25rem 0.55rem;
+  font-size: 0.78rem;
+}
+
+.field {
+  width: 100%;
+  border-radius: 0.65rem;
+  border: 1px solid var(--border-strong);
+  background: rgba(5, 8, 24, 0.6);
+  padding: 0.55rem 0.75rem;
+  color: var(--text);
+  font-size: 0.9rem;
+}
+.field::placeholder {
+  color: var(--faint);
+}
+select.field option {
+  background: var(--panel-solid);
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  border-radius: 999px;
+  padding: 0.1rem 0.55rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  border: 1px solid var(--border-strong);
+  white-space: nowrap;
+}
+
+.sim-badge {
+  background: repeating-linear-gradient(135deg, rgba(255, 200, 87, 0.2) 0 6px, rgba(255, 200, 87, 0.07) 6px 12px);
+  border-color: rgba(255, 200, 87, 0.6);
+  color: #ffe2a3;
+}
+}
+
+@keyframes spin-slow {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.spin-slow {
+  animation: spin-slow 2.4s linear infinite;
+}
+@keyframes dash-flow {
+  to {
+    stroke-dashoffset: -40;
+  }
+}
+.dash-flow {
+  animation: dash-flow 1.2s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+.prose-answer p + p {
+  margin-top: 0.7rem;
+}
+.prose-answer ul {
+  list-style: disc;
+  padding-left: 1.2rem;
+  margin: 0.4rem 0;
+}
+.prose-answer ol {
+  list-style: decimal;
+  padding-left: 1.2rem;
+  margin: 0.4rem 0;
+}
+
+.scroll-thin {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(148, 163, 255, 0.3) transparent;
+}
+
+@layer components {
+.sr-only-focusable:not(:focus) {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+}
 }
