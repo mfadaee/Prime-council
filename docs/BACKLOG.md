@@ -10,6 +10,7 @@ Anything touching secrets, authentication, spending permissions, destructive mig
 
 ## Ready
 
+- [ ] **low/auto** — World project list says "decided by prime"; show "decided by the Founder" / "decided by the Primes" (`src/components/world/WorldPage.tsx`).
 - [ ] **low/auto** — Speed up unit tests by sharing one PGlite instance per test file, with per-test truncation.
 - [ ] **low/auto** — Add a transcript search box (client-side filter over message text).
 - [ ] **low/auto** — Show a per-member token/cost breakdown in the session view.
