@@ -31,12 +31,12 @@ Status labels:
 - Pause, resume, step, speed, snapshots, restore and event replay.
 - Graphical world map.
 
-## Milestone 4 — Continuous improvement · Done
+## Milestone 4 — Continuous improvement · Built; daily scheduling being verified
 
-A daily Claude Code Routine runs the improvement job: one PR per day, merged only when eligible and green. The GitHub Actions variant is available but off. See [DAILY_IMPROVEMENT.md](DAILY_IMPROVEMENT.md).
+A daily Claude Code Routine is scheduled to run the improvement job: one PR per day, merged only when eligible and green. One run has completed (PR #2); unattended scheduled runs are not yet verified. The GitHub Actions variant is available but off. See [DAILY_IMPROVEMENT.md](DAILY_IMPROVEMENT.md).
 
 - CI: lint, typecheck, unit tests, build and e2e.
-- Daily improvement job: a script plus scheduling instructions. Scheduling stays inactive until it is connected to a scheduler.
+- Daily improvement job: a script, a Routine runbook, and a scheduled Routine (see DAILY_IMPROVEMENT.md for its verified status).
 - PR conventions, eligibility for auto-merge, branch protection guidance.
 - Visible improvement history in `/improvements`.
 

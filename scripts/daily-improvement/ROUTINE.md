@@ -1,6 +1,6 @@
 # Daily improvement — Claude Code Routine runbook
 
-This is the runbook for the scheduled **Claude Code Routine** that improves Prime Council once a day. Each firing is a fresh cloud session that is already authenticated to GitHub. It does not need an Anthropic API key in GitHub secrets.
+This is the runbook for the scheduled **Claude Code Routine** that improves Prime Council once a day. The Routine must run in a session that has GitHub access: either the session that created it, or a Routine created in the Claude app with this repository selected. A session without the GitHub connector cannot clone or push, and it must stop and report that. No Anthropic API key in GitHub secrets is needed.
 
 `PROMPT.md` (same folder) defines **what** to improve and the hard rules. This file defines **how** to run in the cloud session.
 

@@ -1,6 +1,6 @@
 # Daily improvement workflow
 
-**Current status: active via a Claude Code Routine** (Option C below). It fires daily at 06:17 UTC as a fresh cloud session authenticated to GitHub, and follows [`scripts/daily-improvement/ROUTINE.md`](../scripts/daily-improvement/ROUTINE.md).
+**Current status: scheduled via a Claude Code Routine** (Option C below), daily at 06:17 UTC, following [`scripts/daily-improvement/ROUTINE.md`](../scripts/daily-improvement/ROUTINE.md). One run has completed end to end (PR #2, implemented, CI green, merged by the eligibility gate). The scheduled firing itself has not yet been observed succeeding; see *Verification status*.
 
 The GitHub Actions workflow (Option A) remains available but **inactive**. It needs `ANTHROPIC_API_KEY` and `IMPROVEMENT_GH_TOKEN` secrets plus `DAILY_IMPROVEMENT_ENABLED=true`. Do not enable both options, or two jobs will race each other.
 
@@ -80,9 +80,9 @@ PRs over 400 changed lines or 15 files, or that delete files, also stay reviewab
 
 This needs the Claude Code CLI (`claude`) and `gh`, both authenticated. Spend and time are capped with `MAX_BUDGET_USD` and `MAX_MINUTES`. Auto-merge still happens only through the GitHub workflow above.
 
-## Option C — Claude Code Routine (active)
+## Option C — Claude Code Routine (scheduled)
 
-A daily Routine on the Founder's Claude account starts a fresh cloud session. That session:
+A daily Routine on the Founder's Claude account wakes the Claude Code session that set the project up. That session holds the GitHub connection. A first attempt that started a *fresh* session each day failed: Routines created by an agent carry no GitHub connector, so the fresh session could not clone or push. To get fresh-session runs instead, create the Routine yourself in the Claude app with this repository selected. Each run:
 1. Attaches this repository and opens one improvement PR.
 2. Waits for CI.
 3. Squash-merges the PR **only** if the repository's eligibility rules say `eligible` **and** every check on the PR head succeeded.
@@ -97,4 +97,4 @@ Manage it in the Claude app (Routines): pause, run now, or delete it. Run costs 
 - **Eligibility rules:** covered by unit tests (`tests/unit/eligibility.test.ts`). The CLI was dry-run locally.
 - **Workflow YAML:** parses.
 - **CI:** runs on GitHub Actions for every PR and push to `main`.
-- **Routine:** the Routine's results are recorded per run in `data/improvements.json` and at `/improvements`.
+- **Routine:** the first scheduled firing (a fresh session) failed for lack of GitHub access and changed nothing; it is disabled. Its replacement wakes the setup session and has not fired yet. Results are recorded per run in `data/improvements.json` and at `/improvements`. If the setup session is archived, the Routine stops working and must be recreated from the Claude app.

@@ -63,6 +63,6 @@
     "risk": "low",
     "remainingIssues": "The link goes to the world page, not to the specific project (projects have no anchor yet).",
     "branch": "improve/2026-10-07-session-world-link",
-    "pr": null
+    "pr": 2
   }
 ]
