@@ -20,7 +20,7 @@ Anything touching secrets, authentication, spending permissions, destructive mig
 - [ ] **review** — Postgres `LISTEN/NOTIFY` event bus for multi-process deployments.
 - [ ] **review** — Token streaming for adapters that support streamed output.
 - [ ] **low/auto** — World map: show trade arrows between inhabitants and the market on evening ticks.
-- [ ] **low/auto** — Link world-origin council sessions back to the world docket from the session header.
+- [x] **low/auto** — Link world-origin council sessions back to the world docket from the session header.
 - [ ] **review** — Model-written project pitches for inhabitants (budgeted under the background scope).
 
 ## Done

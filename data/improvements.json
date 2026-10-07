@@ -53,5 +53,16 @@
     "remainingIssues": "Agents at very large scale need cohort simulation and sharded storage; Primes cannot yet propose new world rules.",
     "branch": "claude/prime-council-direction",
     "pr": null
+  },
+  {
+    "date": "2026-10-07",
+    "title": "Link world decision sessions back to the world",
+    "purpose": "When the Founder opens a session the Primes held about a world decision, there was no way back to the decision itself.",
+    "change": "Sessions linked to a world decision show a 'Back to the world's decisions' link in their header.",
+    "validation": "lint, typecheck, unit tests, build; Playwright world flow extended to follow the link.",
+    "risk": "low",
+    "remainingIssues": "The link goes to the world page, not to the specific project (projects have no anchor yet).",
+    "branch": "improve/2026-10-07-session-world-link",
+    "pr": null
   }
 ]

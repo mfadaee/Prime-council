@@ -20,6 +20,7 @@ interface SessionRecord {
   live: boolean;
   origin: string;
   simulated: boolean;
+  worldDecisionId: string | null;
 }
 
 type DialogKind = null | "challenge" | "direct" | "override";
@@ -163,7 +164,14 @@ export function SessionView({ sessionId }: { sessionId: string }) {
           </p>
           <h1 className="mt-1 font-display text-lg font-bold leading-snug sm:text-xl">{full.question || session.question}</h1>
         </div>
-        <StatusBadge status={full.status} />
+        <div className="flex flex-col items-end gap-1.5">
+          <StatusBadge status={full.status} />
+          {session.worldDecisionId && (
+            <Link href="/world" className="text-xs text-prime underline">
+              ← Back to the world&apos;s decisions
+            </Link>
+          )}
+        </div>
       </section>
 
       {/* Stats */}
