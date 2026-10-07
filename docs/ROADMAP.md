@@ -15,14 +15,14 @@ Status labels:
 - Usage, cost estimates, budgets, session history and replay timeline.
 - Security baseline: loopback-only access, optional token, CSRF header, rate limits, redaction, audit.
 
-## Milestone 2 — Persistent intelligence
+## Milestone 2 — Persistent intelligence · Done
 
 - Member configuration UI (providers, models, personas, roles).
 - Inspectable memory: create, edit, delete, disable, explicit import, and save-from-session.
 - Suggested discussions queue, with reasons and the basis for each suggestion.
 - Opt-in scheduled background sessions with separate limits and a global pause.
 
-## Milestone 3 — Living society
+## Milestone 3 — Living society · Done
 
 - Deterministic world engine with inhabitants, skills, goals, relationships, homes and workplaces.
 - Fictional economy: resources, credits, trade, contracts.
@@ -31,7 +31,9 @@ Status labels:
 - Pause, resume, step, speed, snapshots, restore and event replay.
 - Graphical world map.
 
-## Milestone 4 — Continuous improvement
+## Milestone 4 — Continuous improvement · Partial
+
+The workflows, scripts, rules and history page are in place and tested where possible. **Scheduling is inactive**: it needs the GitHub repository, secrets, branch protection and `DAILY_IMPROVEMENT_ENABLED=true`. See [DAILY_IMPROVEMENT.md](DAILY_IMPROVEMENT.md).
 
 - CI: lint, typecheck, unit tests, build and e2e.
 - Daily improvement job: a script plus scheduling instructions. Scheduling stays inactive until it is connected to a scheduler.

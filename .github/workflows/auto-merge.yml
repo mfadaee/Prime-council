@@ -1,0 +1,53 @@
+name: Auto-merge eligible improvements
+
+# Enables GitHub auto-merge for small, low-risk improvement PRs. GitHub then merges
+# only after every required status check passes (branch protection) — nothing is
+# bypassed. Runs the eligibility rules from the BASE branch, never the PR's code.
+on:
+  pull_request_target:
+    types: [opened, labeled, unlabeled, synchronize, reopened]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  decide:
+    if: startsWith(github.head_ref, 'improve/') && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      PR: ${{ github.event.pull_request.number }}
+    steps:
+      - uses: actions/checkout@v4 # base branch: the PR cannot change its own merge rules
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Check eligibility
+        id: check
+        run: |
+          gh api "repos/${{ github.repository }}/pulls/$PR/files" --paginate > files.json
+          gh pr view "$PR" --json labels,author > pr.json
+          npx tsx scripts/daily-improvement/check-eligibility.ts files.json pr.json "${{ vars.IMPROVEMENT_PR_AUTHOR }}" | tee result.txt
+          echo "eligible=$(head -1 result.txt)" >> "$GITHUB_OUTPUT"
+      - name: Require branch protection with the CI check
+        id: protection
+        run: |
+          # Without a required check, "auto-merge" could merge immediately; refuse in that case.
+          if gh api "repos/${{ github.repository }}/branches/${{ github.event.pull_request.base.ref }}" --jq '.protection.required_status_checks.contexts[]?' 2>/dev/null | grep -qx "lint · typecheck · unit · build"; then
+            echo "protected=yes" >> "$GITHUB_OUTPUT"
+          else
+            echo "protected=no" >> "$GITHUB_OUTPUT"
+            echo "### Auto-merge skipped: the base branch does not require the CI check (run scripts/setup-github.sh)." >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - name: Enable auto-merge (squash) after required checks
+        if: steps.check.outputs.eligible == 'eligible' && steps.protection.outputs.protected == 'yes'
+        run: gh pr merge "$PR" --auto --squash
+      - name: Keep as reviewable PR
+        if: steps.check.outputs.eligible != 'eligible'
+        run: |
+          gh pr merge "$PR" --disable-auto || true
+          { echo "### Not eligible for auto-merge"; tail -n +2 result.txt; } >> "$GITHUB_STEP_SUMMARY"

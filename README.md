@@ -77,6 +77,25 @@ With no provider configured, every seat uses the built-in **demo provider**:
 
 **Settings** (`/settings`): rounds, concurrency, token, timeout, retry, session time and spending limits; the model price table; autonomy switches and the global pause.
 
+**Memory** (`/memory`)
+- Inspect, add, edit, disable and delete what the council may use.
+- Explicitly import notes. Imported items start disabled until you review them.
+- Nothing is read from other apps.
+- **Suggested discussions** (opt-in) propose topics from your approved interests and from unresolved points in past sessions. Each shows why it was suggested and what it is based on.
+- **Background sessions** (opt-in, off by default) only run topics you allowed. They have their own daily cap, interval and budget, and a one-click global pause.
+
+**World** (`/world`)
+- A deterministic simulated community with a fictional economy:
+  - inhabitants with roles, skills, goals, homes, workplaces and relationships;
+  - production, a market, trade and a treasury;
+  - projects proposed by inhabitants;
+  - growth and guilds within your limits.
+- Projects above a threshold go to the **council docket**. Ask the council to deliberate (a linked session), or decide yourself. Decisions enter the world as explicit events.
+- Run, pause, step and change speed; take snapshots and restore them; replay any stored tick.
+- An animated map shows who is doing what.
+
+**Improvements** (`/improvements`): the history of changes, with purpose, validation and remaining issues, plus the status of the daily improvement job.
+
 ## Architecture (short)
 
 ```
@@ -90,7 +109,12 @@ src/
     council/           orchestrator (bounded pipeline), budget guard, prompts, parsing,
                        event bus, reducer (events → chamber state), service layer
     security/          rate limiting, secret redaction
-  components/          chamber, transcript, final answer, settings UIs
+    memory/            memory CRUD + reviewed imports
+    autonomy/          suggestions, bounded background scheduler
+    sim/               deterministic world engine, store (events, ticks, snapshots), runner
+    improvements/      auto-merge eligibility rules, improvement log
+  instrumentation.ts   boot: recover sessions, start scheduler + world runner
+  components/          chamber, transcript, final answer, memory, world map, settings UIs
 tests/unit             orchestration, failures, cancellation, spend, adapters, reducer
 tests/integration      real PostgreSQL (opt-in)
 tests/e2e              Playwright: demo flow, provider failure, stop, replay, mobile, a11y, security
@@ -117,4 +141,18 @@ More detail in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md). Providers are cover
 
 ## Project status
 
-See [docs/ROADMAP.md](docs/ROADMAP.md) for milestones and [docs/BACKLOG.md](docs/BACKLOG.md) for the improvement backlog.
+- [docs/VISION.md](docs/VISION.md) — product vision and principles
+- [docs/ROADMAP.md](docs/ROADMAP.md) — staged roadmap and milestone status
+- [docs/BACKLOG.md](docs/BACKLOG.md) — daily improvement backlog
+- [docs/PROVIDERS.md](docs/PROVIDERS.md) — provider integration
+- [docs/DAILY_IMPROVEMENT.md](docs/DAILY_IMPROVEMENT.md) — the daily coding workflow. **Inactive until set up.**
+- [CONTRIBUTING.md](CONTRIBUTING.md) — contribution rules
+
+## Remote access
+
+The app is local-only by default. To reach it from another device:
+1. Set `SIMLIFE_ACCESS_TOKEN` to a long random value.
+2. Bind to a reachable address (`next start -H 0.0.0.0`).
+3. Put it behind HTTPS.
+
+The proxy then requires the token (sign in at `/login`). Without a token, requests that are not addressed to localhost are refused.

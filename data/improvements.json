@@ -1,0 +1,46 @@
+[
+  {
+    "date": "2026-10-07",
+    "title": "Milestone 1: council MVP",
+    "purpose": "A working AI council the Prime can question, watch and steer.",
+    "change": "Bounded deliberation pipeline, five provider adapters plus labelled demo, live chamber with SSE, Prime controls, spending guard, replay timeline, security baseline.",
+    "validation": "Unit tests (orchestration, failures, cancellation, spend, adapters, reducer), real-PostgreSQL integration test, Playwright desktop + mobile e2e, lint, typecheck, build.",
+    "risk": "review",
+    "remainingIssues": "Real-model calls not exercised (no API keys in the build environment); adapters are tested against local HTTP stubs.",
+    "branch": "main",
+    "pr": null
+  },
+  {
+    "date": "2026-10-07",
+    "title": "Milestone 2: persistent intelligence",
+    "purpose": "Let the council remember what the Prime approves and propose discussions, without autonomy by default.",
+    "change": "Memory screen with review-before-use imports, suggested discussions with reasons, opt-in bounded background scheduler with global pause.",
+    "validation": "Unit tests for import safety, suggestion rules and every scheduler gate; Playwright memory flow.",
+    "risk": "review",
+    "remainingIssues": "Background sessions run only while the app server is running.",
+    "branch": "main",
+    "pr": null
+  },
+  {
+    "date": "2026-10-07",
+    "title": "Milestone 3: living society",
+    "purpose": "Grow the council into a small simulated community whose large decisions go to the council.",
+    "change": "Deterministic world engine with a closed fictional economy, projects, growth and guilds; council docket linked to sessions; snapshots, restore, replay; animated map.",
+    "validation": "Determinism, purity, credit conservation, non-negativity, snapshot replay and society-milestone tests; Playwright world flow.",
+    "risk": "review",
+    "remainingIssues": "Inhabitant behaviour is rule-based only; model-written dialogue is not implemented.",
+    "branch": "main",
+    "pr": null
+  },
+  {
+    "date": "2026-10-07",
+    "title": "Milestone 4: continuous improvement",
+    "purpose": "Make daily, bounded, reviewable improvement possible once the repository is connected.",
+    "change": "CI workflow, daily improvement workflow (off until enabled), auto-merge with base-branch eligibility rules and a branch-protection check, local cron script, setup script, this history page.",
+    "validation": "Eligibility unit tests and CLI dry-runs; workflow YAML parsed. The workflows themselves have not run yet because the GitHub repository does not exist.",
+    "risk": "review",
+    "remainingIssues": "Scheduling is inactive: needs the GitHub repo, secrets, branch protection and DAILY_IMPROVEMENT_ENABLED=true.",
+    "branch": "main",
+    "pr": null
+  }
+]

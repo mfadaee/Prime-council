@@ -1,0 +1,61 @@
+name: Daily improvement
+
+# Inactive until the repository variable DAILY_IMPROVEMENT_ENABLED is set to "true"
+# (manual runs via "Run workflow" are always allowed). See docs/DAILY_IMPROVEMENT.md.
+on:
+  schedule:
+    - cron: "17 6 * * *" # 06:17 UTC daily
+  workflow_dispatch:
+    inputs:
+      focus:
+        description: "Optional focus for this run (e.g. a backlog item)"
+        required: false
+
+concurrency:
+  group: daily-improvement
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+  actions: read
+  id-token: write
+
+jobs:
+  improve:
+    if: github.event_name == 'workflow_dispatch' || vars.DAILY_IMPROVEMENT_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45 # hard runtime limit for the coding job
+    env:
+      # A fine-grained token (contents + pull requests: read/write) so the PR it opens
+      # triggers CI. PRs opened with the default GITHUB_TOKEN do not run workflows.
+      GH_TOKEN: ${{ secrets.IMPROVEMENT_GH_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 50
+          token: ${{ secrets.IMPROVEMENT_GH_TOKEN }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Gather context (recent changes, failing checks)
+        run: |
+          mkdir -p .daily
+          git log --oneline -30 > .daily/recent-commits.txt
+          gh run list --limit 15 --json name,conclusion,headBranch,createdAt > .daily/recent-runs.json || echo "[]" > .daily/recent-runs.json
+          gh pr list --state open --json number,title,headRefName,labels > .daily/open-prs.json || echo "[]" > .daily/open-prs.json
+      - name: Run Claude Code
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          github_token: ${{ secrets.IMPROVEMENT_GH_TOKEN }}
+          prompt: |
+            Follow the instructions in scripts/daily-improvement/PROMPT.md exactly.
+            Today's optional focus from the Prime: "${{ github.event.inputs.focus }}"
+            Context files: .daily/recent-commits.txt, .daily/recent-runs.json, .daily/open-prs.json
+          claude_args: >-
+            --max-budget-usd ${{ vars.DAILY_IMPROVEMENT_BUDGET_USD || '3' }}
+            --allowedTools "Read,Edit,Write,Glob,Grep,Bash(npm run *),Bash(npm test*),Bash(npx playwright *),Bash(git *),Bash(gh pr create *),Bash(gh pr list *),Bash(gh pr edit *),Bash(gh run list *),Bash(date*)"

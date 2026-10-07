@@ -19,7 +19,10 @@ Anything touching secrets, authentication, spending permissions, destructive mig
 - [ ] **review** — Researcher web tools (fetch with allow-list, untrusted wrapping, audit records).
 - [ ] **review** — Postgres `LISTEN/NOTIFY` event bus for multi-process deployments.
 - [ ] **review** — Token streaming for adapters that support streamed output.
+- [ ] **low/auto** — World map: show trade arrows between inhabitants and the market on evening ticks.
+- [ ] **low/auto** — Link world-origin council sessions back to the world docket from the session header.
+- [ ] **review** — Model-written project pitches for inhabitants (budgeted under the background scope).
 
 ## Done
 
-Completed items are recorded in [`docs/IMPROVEMENTS.md`](IMPROVEMENTS.md).
+Completed items are recorded in [`data/improvements.json`](../data/improvements.json) and shown at `/improvements`.
