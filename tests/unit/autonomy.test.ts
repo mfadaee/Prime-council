@@ -10,6 +10,8 @@ import { memoryContext } from "@/lib/council/service";
 import { DEFAULT_AUTONOMY, setAutonomy } from "@/lib/settings";
 import { runs } from "@/lib/council/orchestrator";
 import { setup, waitFor } from "./helpers";
+import { getWorld, setWorldConfig, stepWorld } from "@/lib/sim/store";
+import { DEFAULT_WORLD_CONFIG, type WorldState } from "@/lib/sim/types";
 
 let db: Db;
 let close: () => Promise<void>;
@@ -88,7 +90,7 @@ describe("background scheduler", () => {
     expect((await tick(db)).outcome).toBe("paused");
   });
 
-  it("only runs suggestions the Prime scheduled", async () => {
+  it("only runs suggestions the Founder scheduled", async () => {
     await enable();
     await db.insert(suggestions).values({ id: "sug_q", question: "Queued only", reason: "r", proposedBy: "rules", status: "queued" });
     expect((await tick(db)).outcome).toBe("nothing-scheduled");
@@ -125,4 +127,29 @@ describe("background scheduler", () => {
     const [sug] = await db.select().from(suggestions);
     expect(sug.status).toBe("scheduled");
   }, 30_000);
+});
+
+describe("Prime governance", () => {
+  it("is off by default and, when enabled, sends a pending world decision to the Primes", async () => {
+    await setWorldConfig(db, { ...DEFAULT_WORLD_CONFIG, councilThresholdCredits: 10 });
+    let state: WorldState | null = null;
+    for (let i = 0; i < 40 && !state?.projects.some((p) => p.status === "awaiting_council"); i++) state = await stepWorld(db, 1);
+    const pending = state!.projects.find((p) => p.status === "awaiting_council")!;
+
+    expect((await tick(db)).outcome).toBe("disabled");
+
+    await setAutonomy(db, { ...DEFAULT_AUTONOMY, primeGovernance: true });
+    const r = await tick(db);
+    expect(r.outcome).toBe("governance-started");
+    const [s] = await db.select().from(councilSessions).where(eq(councilSessions.id, r.sessionId!));
+    expect(s.origin).toBe("governance");
+    expect(s.worldDecisionId).toBe(pending.id);
+    await runs.get(r.sessionId!)!.done;
+    await new Promise((res) => setTimeout(res, 300));
+    // Demo (simulated) decisions are never applied automatically.
+    const after = (await getWorld(db)).state as WorldState;
+    expect(after.projects.find((p) => p.id === pending.id)!.status).toBe("awaiting_council");
+    // Already deliberated: it is not picked up again.
+    expect((await tick(db)).outcome).not.toBe("governance-started");
+  }, 60_000);
 });

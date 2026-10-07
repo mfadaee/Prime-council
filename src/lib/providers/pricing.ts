@@ -9,7 +9,7 @@ export interface Price {
 /**
  * Built-in prices are limited to list prices we could verify when this was
  * written (Anthropic first-party API, checked 2026-09-25). Everything else is
- * unpriced until the Prime adds a price in Settings → Pricing.
+ * unpriced until the Founder adds a price in Settings → Pricing.
  */
 export const BUILTIN_PRICES: Record<string, Price> = {
   "anthropic:claude-fable-5-1": { inputPerM: 10, outputPerM: 50 },

@@ -42,5 +42,16 @@
     "remainingIssues": "Scheduling is inactive: needs the GitHub repo, secrets, branch protection and DAILY_IMPROVEMENT_ENABLED=true.",
     "branch": "main",
     "pr": null
+  },
+  {
+    "date": "2026-10-07",
+    "title": "Prime Council: Founder, Primes and Chronicle",
+    "purpose": "Reshape the product around the Founder's vision: one Prime per AI model building intelligence and a simulated world for truth and human benefit, with the Founder seeing only major decisions and outcomes.",
+    "change": "Rename to Prime Council; Founder role; editable charter in every Prime's context; Primes seeded across configured model families; Chronicle home with outcome tiles; opt-in Prime governance of world decisions; agents record their creating Prime; bounded relationship state; autonomous deliberations collapsed by default.",
+    "validation": "Unit + PostgreSQL integration tests (94), Playwright desktop + mobile e2e (14), lint, typecheck, build.",
+    "risk": "review",
+    "remainingIssues": "Agents at very large scale need cohort simulation and sharded storage; Primes cannot yet propose new world rules.",
+    "branch": "claude/prime-council-direction",
+    "pr": null
   }
 ]

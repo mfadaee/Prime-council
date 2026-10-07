@@ -9,7 +9,7 @@ cd "$(dirname "$0")/.."
 
 # 1. Create the repository if it does not exist, then push.
 if ! gh repo view "$FULL" >/dev/null 2>&1; then
-  gh repo create "$FULL" --private --description "Simulated Life — an AI council that grows into a simulated society"
+  gh repo create "$FULL" --private --description "Prime Council — an AI council that grows into a simulated society"
 fi
 git remote get-url origin >/dev/null 2>&1 || git remote add origin "https://github.com/$FULL.git"
 git push -u origin main

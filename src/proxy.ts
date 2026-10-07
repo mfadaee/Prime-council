@@ -32,7 +32,7 @@ export async function proxy(req: NextRequest) {
     const host = req.headers.get("host") ?? "";
     if (!LOOPBACK.test(host)) {
       return new NextResponse(
-        "Simulated Life is local-only. Set SIMLIFE_ACCESS_TOKEN to allow access from other hosts (see README → Remote access).",
+        "Prime Council is local-only. Set SIMLIFE_ACCESS_TOKEN to allow access from other hosts (see README → Remote access).",
         { status: 403, headers: { "content-type": "text/plain" } },
       );
     }

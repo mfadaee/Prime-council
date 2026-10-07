@@ -4,7 +4,7 @@ import type { Db } from "@/lib/db/client";
 import { auditLog, contributions, councilSessions, members, memoryItems, providers, sessionEvents, usageRecords } from "@/lib/db/schema";
 import { priceFor, type PriceTable } from "@/lib/providers/pricing";
 import { ADAPTERS, providerStatus, resolveProvider, type ProviderRow } from "@/lib/providers/registry";
-import { getAutonomy, getLimits, getPricing } from "@/lib/settings";
+import { getAutonomy, getCharter, getLimits, getPricing } from "@/lib/settings";
 import { newId, startOfUtcDay } from "@/lib/util";
 import { CouncilRun, emptyState, registerRun, runs, type OrchestratorDeps, type SessionState } from "./orchestrator";
 import { ensureSeeded } from "./seed";
@@ -95,14 +95,14 @@ async function budgetFor(db: Db, limits: Limits, scope: "council" | "background"
 
 export interface StartOptions {
   question: string;
-  origin?: "prime" | "suggestion" | "background" | "world";
+  origin?: "prime" | "suggestion" | "background" | "world" | "governance";
   worldDecisionId?: string | null;
   limitsOverride?: Partial<Limits>;
 }
 
 export async function startSession(db: Db, opts: StartOptions): Promise<{ id: string; run: CouncilRun }> {
   await ensureSeeded(db);
-  const scope = opts.origin === "background" ? "background" : "council";
+  const scope = opts.origin === "background" || opts.origin === "governance" ? "background" : "council";
   const limits = { ...(await getLimits(db)), ...opts.limitsOverride };
   const providerRows = await loadProviders(db);
   const memberRows = (await db.select().from(members).where(eq(members.enabled, true)).orderBy(asc(members.seat))) as MemberProfile[];
@@ -122,7 +122,7 @@ export async function startSession(db: Db, opts: StartOptions): Promise<{ id: st
     roster,
     worldDecisionId: opts.worldDecisionId ?? null,
   });
-  await audit(db, opts.origin === "background" ? "scheduler" : "prime", "session.start", id, { origin: opts.origin ?? "prime" });
+  await audit(db, scope === "background" ? "scheduler" : "prime", "session.start", id, { origin: opts.origin ?? "prime" });
   const run = new CouncilRun({
     deps: { db, resolve: makeResolver(providerRows, pricing), scope },
     sessionId: id,
@@ -130,6 +130,7 @@ export async function startSession(db: Db, opts: StartOptions): Promise<{ id: st
     roster,
     limits,
     memory,
+    charter: await getCharter(db),
     budget,
     dailySpent: daily,
   });
@@ -170,7 +171,7 @@ export async function getRun(db: Db, sessionId: string): Promise<CouncilRun | nu
   const providerRows = await loadProviders(db);
   const pricing = await getPricing(db);
   const [{ seq }] = await db.select({ seq: max(sessionEvents.seq) }).from(sessionEvents).where(eq(sessionEvents.sessionId, sessionId));
-  const scope = row.origin === "background" ? "background" : "council";
+  const scope = row.origin === "background" || row.origin === "governance" ? "background" : "council";
   const { daily, budget } = await budgetFor(db, limits, scope);
   const run = new CouncilRun({
     deps: { db, resolve: makeResolver(providerRows, pricing), scope },
@@ -179,6 +180,7 @@ export async function getRun(db: Db, sessionId: string): Promise<CouncilRun | nu
     roster: row.roster as RosterEntry[],
     limits,
     memory: await memoryContext(db),
+    charter: await getCharter(db),
     budget,
     sessionSpent: row.costUsd,
     dailySpent: daily,
@@ -198,7 +200,7 @@ export async function getRun(db: Db, sessionId: string): Promise<CouncilRun | nu
 
 export type ActResult = { ok: true; note?: string } | { ok: false; error: string; status: number };
 
-/** Apply a Prime action to a session, live or finished. */
+/** Apply a Founder action to a session, live or finished. */
 export async function applyAction(db: Db, sessionId: string, action: PrimeAction): Promise<ActResult> {
   const run = await getRun(db, sessionId);
   if (!run) return { ok: false, error: "Session not found", status: 404 };

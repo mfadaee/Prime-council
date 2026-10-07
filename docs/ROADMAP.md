@@ -31,16 +31,29 @@ Status labels:
 - Pause, resume, step, speed, snapshots, restore and event replay.
 - Graphical world map.
 
-## Milestone 4 — Continuous improvement · Partial
+## Milestone 4 — Continuous improvement · Done
 
-The workflows, scripts, rules and history page are in place and tested where possible. **Scheduling is inactive**: it needs the GitHub repository, secrets, branch protection and `DAILY_IMPROVEMENT_ENABLED=true`. See [DAILY_IMPROVEMENT.md](DAILY_IMPROVEMENT.md).
+A daily Claude Code Routine runs the improvement job: one PR per day, merged only when eligible and green. The GitHub Actions variant is available but off. See [DAILY_IMPROVEMENT.md](DAILY_IMPROVEMENT.md).
 
 - CI: lint, typecheck, unit tests, build and e2e.
 - Daily improvement job: a script plus scheduling instructions. Scheduling stays inactive until it is connected to a scheduler.
 - PR conventions, eligibility for auto-merge, branch protection guidance.
 - Visible improvement history in `/improvements`.
 
+## Prime Council direction · Done (first slice)
+
+- Founder / Primes / agents model: you deal only with the Primes.
+- Charter: an editable standing mission in every Prime's context.
+- One Prime per configured model family, with a diversity indicator.
+- Chronicle of major decisions and outcomes; autonomous deliberations collapsed by default.
+- Prime governance: opt-in, bounded; the Primes decide world matters themselves.
+- Agents record which Prime created them; relationship state stays bounded for larger populations (up to 500 now).
+
 ## Later
+
+- Agents at scale (thousands → millions): cohort-level simulation, sharded storage, sampled event logs.
+- Primes propose new world rules and agent capabilities. Each proposal is reviewed and applied only if the Founder approves.
+- Calibrate the world against sourced real-world data.
 
 - Research tools for the Researcher, with sources fetched and treated as untrusted.
 - Multi-process deployment: shared event bus (Postgres `LISTEN/NOTIFY`) and a job queue.

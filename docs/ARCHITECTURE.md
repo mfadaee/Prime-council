@@ -1,6 +1,6 @@
 # Architecture
 
-Simulated Life is one Next.js (App Router) application with a server-side orchestration layer, PostgreSQL persistence and Server-Sent Events. It is built in layers so the council and the world simulation can each run on their own while linking through explicit events.
+Prime Council is one Next.js (App Router) application with a server-side orchestration layer, PostgreSQL persistence and Server-Sent Events. It is built in layers so the council and the world simulation can each run on their own while linking through explicit events.
 
 ```
 Browser ── fetch/SSE ──► Route handlers (/api/*) ──► Services ──► Engines ──► Providers

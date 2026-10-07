@@ -48,7 +48,7 @@ export function WorldMap({ state, selected, onSelect }: { state: WorldState; sel
   const activeProject = state.projects.find((p) => p.status === "active");
 
   return (
-    <svg viewBox="0 0 100 64" className="h-full w-full" role="img" aria-label={`Map of ${state.name}: ${state.inhabitants.length} inhabitants`}>
+    <svg viewBox="0 0 100 64" className="h-full w-full" role="img" aria-label={`Map of ${state.name}: ${state.inhabitants.length} agents`}>
       <defs>
         <radialGradient id="land" cx="50%" cy="45%" r="70%">
           <stop offset="0%" stopColor="#1d2a52" />

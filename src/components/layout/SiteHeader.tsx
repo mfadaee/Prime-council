@@ -9,7 +9,7 @@ import { api, formatUsd } from "@/lib/client/api";
 const NAV = [
   { href: "/", label: "Council" },
   { href: "/sessions", label: "Sessions" },
-  { href: "/members", label: "Members" },
+  { href: "/members", label: "Primes" },
   { href: "/memory", label: "Memory" },
   { href: "/world", label: "World" },
   { href: "/settings", label: "Settings" },
@@ -48,10 +48,10 @@ export function SiteHeader() {
   return (
     <header className="sticky top-0 z-40 border-b border-line bg-bg/75 backdrop-blur-xl">
       <div className="mx-auto flex max-w-[1500px] items-center gap-3 px-3 py-2.5 sm:px-5">
-        <Link href="/" className="flex items-center gap-2.5 rounded-lg pr-2" aria-label="Simulated Life — Council chamber">
+        <Link href="/" className="flex items-center gap-2.5 rounded-lg pr-2" aria-label="Prime Council — Council chamber">
           <LogoMark size={34} />
           <span className="whitespace-nowrap font-display text-base font-bold tracking-tight sm:text-lg">
-            Simulated <span className="bg-gradient-to-r from-prime to-[#ff8fcb] bg-clip-text text-transparent">Life</span>
+            Prime <span className="bg-gradient-to-r from-prime to-[#ff8fcb] bg-clip-text text-transparent">Council</span>
           </span>
         </Link>
 

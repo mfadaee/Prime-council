@@ -158,3 +158,23 @@ describe("Prime-configured limits", () => {
     expect(state.organizations.length).toBe(0);
   });
 });
+
+describe("agents created by the Primes", () => {
+  const primes = [
+    { id: "aurelia", name: "Aurelia" },
+    { id: "quill", name: "Quill" },
+  ];
+
+  it("records which Prime created each agent, including newcomers", () => {
+    const { state, events } = runTicks(createWorld(11, { maxPopulation: 10 }, "Test", primes).state, 600);
+    expect(state.inhabitants.every((i) => primes.some((p) => p.id === i.createdBy))).toBe(true);
+    expect(new Set(state.inhabitants.map((i) => i.createdBy)).size).toBe(2);
+    const arrival = events.find((e) => e.type === "inhabitant.arrived");
+    if (arrival) expect(arrival.text).toMatch(/(Aurelia|Quill) creates a new agent/);
+  });
+
+  it("keeps relationship state bounded per agent as the world runs", () => {
+    const { state } = runTicks(createWorld(12, { maxPopulation: 30 }, "Test", primes).state, 900);
+    for (const i of state.inhabitants) expect(Object.keys(i.relationships).length).toBeLessThanOrEqual(12);
+  });
+});

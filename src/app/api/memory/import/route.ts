@@ -2,7 +2,7 @@ import { body, HttpError, json, route } from "@/lib/api";
 import { audit } from "@/lib/council/service";
 import { importMemory, importSchema } from "@/lib/memory/service";
 
-/** Explicit import: the Prime pastes notes or an export. Items arrive disabled for review. */
+/** Explicit import: the Founder pastes notes or an export. Items arrive disabled for review. */
 export const POST = route(async (req, _ctx, db) => {
   const { text, label } = await body(req, importSchema);
   const rows = await importMemory(db, text, label);

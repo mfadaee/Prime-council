@@ -1,6 +1,6 @@
 /**
  * Runs once per server start. Starts the background scheduler (which does
- * nothing unless the Prime enables autonomy) and recovers sessions that were
+ * nothing unless the Founder enables autonomy) and recovers sessions that were
  * running when the previous server process stopped.
  */
 export async function register() {

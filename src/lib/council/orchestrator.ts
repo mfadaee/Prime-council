@@ -131,6 +131,7 @@ export class CouncilRun {
   readonly roster: RosterEntry[];
   readonly limits: Limits;
   readonly memory: string[];
+  readonly charter: string;
   readonly excluded: Set<string>;
   readonly state: SessionState;
   private readonly deps: OrchestratorDeps;
@@ -144,7 +145,7 @@ export class CouncilRun {
   private seq: number;
   private totals = { inputTokens: 0, outputTokens: 0, costUsd: 0 };
   private wallTimer?: ReturnType<typeof setTimeout>;
-  private stopReason = "Stopped by the Prime";
+  private stopReason = "Stopped by the Founder";
   private readonly allSimulated: boolean;
   status: SessionStatus = "running";
   get running(): boolean {
@@ -162,6 +163,7 @@ export class CouncilRun {
     roster: RosterEntry[];
     limits: Limits;
     memory: string[];
+    charter?: string;
     budget: BudgetLimits;
     sessionSpent?: number;
     dailySpent: number;
@@ -176,6 +178,7 @@ export class CouncilRun {
     this.roster = opts.roster;
     this.limits = opts.limits;
     this.memory = opts.memory;
+    this.charter = opts.charter ?? "";
     this.excluded = new Set(opts.excluded ?? []);
     this.state = opts.state ?? emptyState();
     this.seq = opts.nextSeq ?? 0;
@@ -232,26 +235,26 @@ export class CouncilRun {
     );
   }
 
-  // ------------------------------------------------------- Prime control ---
+  // ------------------------------------------------------- Founder control ---
 
-  /** Queue a Prime action. Stop and exclude act immediately on in-flight calls. */
+  /** Queue a Founder action. Stop and exclude act immediately on in-flight calls. */
   async act(action: PrimeAction): Promise<void> {
     if (action.type === "stop") {
       await this.emit({ type: "prime.intervention", action: "stop", detail: {} });
-      this.cancel("Stopped by the Prime");
+      this.cancel("Stopped by the Founder");
       return;
     }
     if (action.type === "exclude") {
       this.excluded.add(action.memberId);
       for (const c of this.memberAborts.get(action.memberId) ?? []) c.abort();
       await this.emit({ type: "prime.intervention", action: "exclude", detail: { memberId: action.memberId } });
-      await this.setState(action.memberId, "offline", "Excluded by the Prime");
+      await this.setState(action.memberId, "offline", "Excluded by the Founder");
       return;
     }
     if (action.type === "include") {
       this.excluded.delete(action.memberId);
       await this.emit({ type: "prime.intervention", action: "include", detail: { memberId: action.memberId } });
-      await this.setState(action.memberId, "idle", "Re-included by the Prime");
+      await this.setState(action.memberId, "idle", "Re-included by the Founder");
       return;
     }
     this.actions.push(action);
@@ -300,7 +303,7 @@ export class CouncilRun {
       return null;
     }
     const { adapter, provider, price } = resolved;
-    const system = systemPrompt(m);
+    const system = systemPrompt(m, this.charter);
     const maxOut = this.limits.maxOutputTokens;
     const estIn = estimateTokens(system + prompt);
     const reservation = this.guard.reserve(costUsd(price, estIn, maxOut));
@@ -561,7 +564,7 @@ export class CouncilRun {
       const challenges = await this.critiqueRound(round, focus);
       await this.checkpoint();
       if (challenges.length) await this.resolveRound(round, challenges);
-      // Stop early on consensus unless the Prime explicitly asked for more.
+      // Stop early on consensus unless the Founder explicitly asked for more.
       if (!challenges.length && !this.focus.length && this.extraRounds === 0) break;
     }
   }
@@ -674,13 +677,13 @@ export class CouncilRun {
     return status;
   }
 
-  /** The Prime's decision supersedes the council's (the council's answer is kept for comparison). */
+  /** The Founder's decision supersedes the council's (the council's answer is kept for comparison). */
   async recordOverride(decision: string, note?: string): Promise<void> {
     if (this.running) await this.done.catch(() => {});
     await this.emit({ type: "session.override", decision, note });
   }
 
-  /** Prime addresses one member directly. Works during or after a session. */
+  /** Founder addresses one member directly. Works during or after a session. */
   async direct(memberId: string, message: string): Promise<boolean> {
     const m = this.member(memberId);
     if (!m) return false;

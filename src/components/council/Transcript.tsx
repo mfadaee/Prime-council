@@ -37,7 +37,7 @@ export function Transcript({
   const scroller = useRef<HTMLDivElement>(null);
   const pinned = useRef(true);
   const byId = useMemo(() => new Map(members.map((m) => [m.id, m])), [members]);
-  const nameOf = (id: string) => (id === "prime" ? "the Prime" : (byId.get(id)?.name ?? id));
+  const nameOf = (id: string) => (id === "prime" ? "the Founder" : (byId.get(id)?.name ?? id));
 
   const entries: Entry[] = useMemo(() => {
     const e: Entry[] = [

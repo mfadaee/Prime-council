@@ -116,7 +116,7 @@ export function WorldPage() {
             </span>
           </h1>
           <p className="text-xs text-muted">
-            A deterministic simulation with a fictional economy. Inhabitants are simulated agents, not people. Population {view.inhabitants.length}/{view.config.maxPopulation} · housing {housing} · seed {data.world.seed}
+            A deterministic simulation with a fictional economy. Its inhabitants are agents created by the Primes — simulations, not people. You speak only with the Primes; agents act in the world. Population {view.inhabitants.length}/{view.config.maxPopulation} · housing {housing} · seed {data.world.seed}
             {view.branch ? ` · branch ${view.branch}` : ""}
           </p>
         </div>
@@ -231,8 +231,9 @@ export function WorldPage() {
             <h2 id="inh-title" className="font-display text-lg font-bold">
               Who is doing what
             </h2>
+            {view.inhabitants.length > 60 && <p className="text-xs text-muted">Showing 60 of {view.inhabitants.length} agents.</p>}
             <ul className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-              {view.inhabitants.map((i) => (
+              {view.inhabitants.slice(0, 60).map((i) => (
                 <li key={i.id}>
                   <button
                     className={`w-full rounded-xl border p-2.5 text-left transition hover:bg-white/5 ${selected === i.id ? "border-prime" : "border-line"}`}
@@ -245,6 +246,7 @@ export function WorldPage() {
                       </span>
                       <span className="font-semibold">{i.name}</span>
                       <span className="text-xs capitalize text-muted">{i.role}</span>
+                      <span className="text-[10px] text-faint">by {view.primes?.find((p) => p.id === i.createdBy)?.name ?? "council"}</span>
                       <span className="ml-auto text-xs text-faint">{cr(i.cents)} cr</span>
                     </div>
                     <p className="mt-1 text-xs">
@@ -264,9 +266,9 @@ export function WorldPage() {
         <aside className="space-y-4">
           <section className="panel p-4" aria-labelledby="docket-title">
             <h2 id="docket-title" className="font-display text-lg font-bold text-prime">
-              ♛ Council docket
+              ♛ Decisions for the Primes
             </h2>
-            <p className="mt-1 text-xs text-muted">Projects above {view.config.councilThresholdCredits} credits need a decision. Ask the council to deliberate, or decide yourself.</p>
+            <p className="mt-1 text-xs text-muted">Projects above {view.config.councilThresholdCredits} credits need a decision. Ask the Primes (or let them decide under Prime governance in Settings), or decide yourself.</p>
             {docket.length === 0 && <p className="mt-2 text-sm text-faint">Nothing awaits a decision.</p>}
             <ul className="mt-2 space-y-2">
               {docket.map((p) => {
@@ -297,7 +299,7 @@ export function WorldPage() {
                           const r = await act({ action: "ask_council", projectId: p.id }, "The council is deliberating — follow the session or wait for its recommendation here.");
                           if (r?.sessionId) setMsg(`Council session started: /sessions/${r.sessionId}`);
                         }}>
-                          Ask the council
+                          Ask the Primes
                         </button>
                         {rec?.recommendation && (
                           <button className="btn btn-sm" disabled={busy} onClick={() => act({ action: "apply_recommendation", projectId: p.id }, "Council recommendation applied")}>
@@ -402,7 +404,9 @@ export function WorldPage() {
       <Dialog open={Boolean(sel)} onClose={() => setSelected(null)} title={sel ? `${sel.name} — ${sel.role}` : ""}>
         {sel && (
           <div className="space-y-3 text-sm">
-            <p className="text-xs text-muted">A simulated inhabitant: its behaviour follows deterministic rules, not a mind.</p>
+            <p className="text-xs text-muted">
+              An agent created by {view.primes?.find((p) => p.id === sel.createdBy)?.name ?? "the council"}. Its behaviour follows deterministic rules, not a mind; you interact with the Primes, not with agents.
+            </p>
             <p>
               <b>Goal:</b> {sel.goal}
             </p>

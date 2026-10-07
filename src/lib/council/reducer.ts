@@ -113,7 +113,7 @@ const PHASE_LABEL: Record<Phase, string> = {
 export const phaseLabel = (p: Phase | null) => (p ? PHASE_LABEL[p] : "Waiting");
 
 function nameOf(s: ChamberState, id: string): string {
-  if (id === "prime") return "the Prime";
+  if (id === "prime") return "the Founder";
   return s.roster.find((m) => m.id === id)?.name ?? id;
 }
 
@@ -178,20 +178,20 @@ export function reduce(s: ChamberState, e: StoredEvent): ChamberState {
       const d = e.detail as Record<string, unknown>;
       const text =
         e.action === "stop"
-          ? "The Prime stopped deliberation"
+          ? "The Founder stopped deliberation"
           : e.action === "exclude"
-            ? `The Prime excluded ${nameOf(s, String(d.memberId))}`
+            ? `The Founder excluded ${nameOf(s, String(d.memberId))}`
             : e.action === "include"
-              ? `The Prime re-included ${nameOf(s, String(d.memberId))}`
+              ? `The Founder re-included ${nameOf(s, String(d.memberId))}`
               : e.action === "another_round"
                 ? d.granted
-                  ? "The Prime requested another round"
+                  ? "The Founder requested another round"
                   : `Another round refused: ${String(d.reason ?? "limit reached")}`
                 : e.action === "challenge"
-                  ? `The Prime asked the council to challenge: "${String(d.claim)}"`
+                  ? `The Founder asked the council to challenge: "${String(d.claim)}"`
                   : e.action === "direct"
-                    ? `The Prime to ${nameOf(s, String(d.memberId))}: "${String(d.message)}"`
-                    : `Prime action: ${e.action}`;
+                    ? `The Founder to ${nameOf(s, String(d.memberId))}: "${String(d.message)}"`
+                    : `Founder action: ${e.action}`;
       next.notes = [...s.notes, { seq: e.seq, at: e.at, tone: "prime", text, memberId: typeof d.memberId === "string" ? d.memberId : undefined }];
       if (e.action === "exclude") next.excluded = [...new Set([...s.excluded, String(d.memberId)])];
       if (e.action === "include") next.excluded = s.excluded.filter((x) => x !== String(d.memberId));
@@ -204,7 +204,7 @@ export function reduce(s: ChamberState, e: StoredEvent): ChamberState {
       break;
     case "session.override":
       next.override = { decision: e.decision, note: e.note };
-      next.notes = [...s.notes, { seq: e.seq, at: e.at, tone: "prime", text: "The Prime overrode the council's decision" }];
+      next.notes = [...s.notes, { seq: e.seq, at: e.at, tone: "prime", text: "The Founder overrode the council's decision" }];
       break;
     case "session.ended":
       next.status = e.status;

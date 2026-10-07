@@ -2,9 +2,10 @@ import "server-only";
 import { and, asc, desc, eq, gt, lt, lte } from "drizzle-orm";
 import { z } from "zod";
 import type { Db } from "@/lib/db/client";
-import { councilSessions, worldEvents, worldSnapshots, worlds, worldTicks } from "@/lib/db/schema";
+import { councilSessions, members, worldEvents, worldSnapshots, worlds, worldTicks } from "@/lib/db/schema";
 import { audit, startSession } from "@/lib/council/service";
 import type { FinalAnswer } from "@/lib/council/types";
+import { getAutonomy } from "@/lib/settings";
 import { newId } from "@/lib/util";
 import { councilQuestion, createWorld, decide, parseRecommendation, step } from "./engine";
 import { DEFAULT_WORLD_CONFIG, type WorldConfig, type WorldEvent, type WorldState } from "./types";
@@ -13,7 +14,7 @@ export const WORLD_ID = "world_main";
 const TICK_HISTORY = 900; // per-tick states kept for replay
 
 export const worldConfigSchema = z.object({
-  maxPopulation: z.number().int().min(1).max(40),
+  maxPopulation: z.number().int().min(1).max(500),
   maxOrganizations: z.number().int().min(0).max(10),
   growthEnabled: z.boolean(),
   councilThresholdCredits: z.number().min(0).max(1000),
@@ -46,10 +47,24 @@ async function saveState(db: Db, state: WorldState, extra: Partial<Row> = {}) {
   await db.delete(worldTicks).where(and(eq(worldTicks.worldId, WORLD_ID), lt(worldTicks.tick, state.tick - TICK_HISTORY)));
 }
 
+async function primeRoster(db: Db) {
+  const rows = await db.select({ id: members.id, name: members.name, enabled: members.enabled, seat: members.seat }).from(members).orderBy(asc(members.seat));
+  return rows.filter((r) => r.enabled).map((r) => ({ id: r.id, name: r.name }));
+}
+
 export async function getWorld(db: Db): Promise<Row> {
   const [row] = await db.select().from(worlds).where(eq(worlds.id, WORLD_ID));
-  if (row) return row;
-  const { state, events } = createWorld(42, DEFAULT_WORLD_CONFIG);
+  if (row) {
+    const st = row.state as WorldState;
+    if (!Array.isArray(st.primes)) {
+      // Worlds saved before agent lineage existed: attach the current Primes.
+      st.primes = await primeRoster(db);
+      for (const i of st.inhabitants) i.createdBy ??= "council";
+      await db.update(worlds).set({ state: st }).where(eq(worlds.id, WORLD_ID));
+    }
+    return row;
+  }
+  const { state, events } = createWorld(42, DEFAULT_WORLD_CONFIG, "Ember Hollow", await primeRoster(db));
   await db.insert(worlds).values({ id: WORLD_ID, name: state.name, seed: state.seed, config: state.config, state, tick: 0 }).onConflictDoNothing();
   await db.insert(worldTicks).values({ worldId: WORLD_ID, tick: 0, state }).onConflictDoNothing();
   await appendEvents(db, state, events);
@@ -94,9 +109,9 @@ export async function decideProject(db: Db, projectId: string, decision: "approv
  * Ask the council to deliberate on a project. Linked both ways: the session
  * records worldDecisionId; the world records a council.requested event. When the
  * session ends, its recommendation is recorded as a world event, and applied
- * automatically only if the Prime enabled auto-apply and the answer is unambiguous.
+ * automatically only if the Founder enabled auto-apply and the answer is unambiguous.
  */
-export async function requestCouncil(db: Db, projectId: string): Promise<string> {
+export async function requestCouncil(db: Db, projectId: string, opts: { automated?: boolean } = {}): Promise<string> {
   const state = (await getWorld(db)).state as WorldState;
   const p = state.projects.find((x) => x.id === projectId);
   if (!p || p.status !== "awaiting_council") throw new Error("Project is not awaiting a decision");
@@ -104,16 +119,26 @@ export async function requestCouncil(db: Db, projectId: string): Promise<string>
     const [prev] = await db.select({ status: councilSessions.status }).from(councilSessions).where(eq(councilSessions.id, p.sessionId));
     if (prev?.status === "running") throw new Error("The council is already deliberating on this project");
   }
-  const { id, run } = await startSession(db, { question: councilQuestion(state, p), origin: "world", worldDecisionId: projectId });
+  const { id, run } = await startSession(db, {
+    question: councilQuestion(state, p),
+    origin: opts.automated ? "governance" : "world",
+    worldDecisionId: projectId,
+    ...(opts.automated ? { limitsOverride: { maxRounds: 1, hardMaxRounds: 1 } } : {}),
+  });
   await withWorldLock(async () => {
     const s = (await getWorld(db)).state as WorldState;
     const proj = s.projects.find((x) => x.id === projectId);
     if (proj) proj.sessionId = id;
-    const ev: WorldEvent = { type: "council.requested", tick: s.tick, text: `The Prime asks the council to deliberate on ${p.name}.`, data: { projectId, sessionId: id } };
+    const ev: WorldEvent = {
+      type: "council.requested",
+      tick: s.tick,
+      text: opts.automated ? `The Primes take up ${p.name} for decision (Prime governance).` : `The Founder asks the Primes to deliberate on ${p.name}.`,
+      data: { projectId, sessionId: id, automated: Boolean(opts.automated) },
+    };
     await appendEvents(db, s, [ev]);
     await saveState(db, s);
   });
-  await audit(db, "prime", "world.council_requested", projectId, { sessionId: id });
+  await audit(db, opts.automated ? "scheduler" : "prime", "world.council_requested", projectId, { sessionId: id });
   void run.done.then(() => recordRecommendation(db, projectId, id)).catch((e) => console.error("[world]", e));
   return id;
 }
@@ -128,14 +153,15 @@ export async function recordRecommendation(db: Db, projectId: string, sessionId:
     ? `The council session on this project ended without an answer (${session?.status ?? "unknown"}).`
     : rec
       ? `The council recommends: ${rec.toUpperCase()}${session?.simulated ? " (simulated session)" : ""}.`
-      : `The council answered without a clear APPROVE/REJECT recommendation${session?.simulated ? " (simulated demo session)" : ""}; the Prime decides.`;
+      : `The council answered without a clear APPROVE/REJECT recommendation${session?.simulated ? " (simulated demo session)" : ""}; the Founder decides.`;
   await withWorldLock(async () => {
     const s = (await getWorld(db)).state as WorldState;
     await appendEvents(db, s, [{ type: "council.recommendation", tick: s.tick, text, data: { projectId, sessionId, recommendation: rec, simulated: session?.simulated ?? false } }]);
   });
   const p = state.projects.find((x) => x.id === projectId);
-  if (rec && state.config.councilAutoApply && p?.status === "awaiting_council" && !session?.simulated) {
-    await decideProject(db, projectId, rec, { by: "council", sessionId, reason: "Applied automatically (auto-apply is on)." });
+  const governance = session?.origin === "governance" && (await getAutonomy(db)).primeGovernance;
+  if (rec && (state.config.councilAutoApply || governance) && p?.status === "awaiting_council" && !session?.simulated) {
+    await decideProject(db, projectId, rec, { by: "council", sessionId, reason: governance ? "Decided under Prime governance." : "Applied automatically (auto-apply is on)." });
   }
   return rec;
 }
@@ -155,7 +181,7 @@ export async function setWorldConfig(db: Db, config: WorldConfig) {
   return withWorldLock(async () => {
     const s = (await getWorld(db)).state as WorldState;
     s.config = worldConfigSchema.parse(config);
-    await appendEvents(db, s, [{ type: "world.config", tick: s.tick, text: `The Prime updated the world rules: max population ${config.maxPopulation}, max organisations ${config.maxOrganizations}, growth ${config.growthEnabled ? "on" : "off"}, council threshold ${config.councilThresholdCredits} credits.`, data: { ...config } }]);
+    await appendEvents(db, s, [{ type: "world.config", tick: s.tick, text: `The Founder updated the world rules: max population ${config.maxPopulation}, max organisations ${config.maxOrganizations}, growth ${config.growthEnabled ? "on" : "off"}, council threshold ${config.councilThresholdCredits} credits.`, data: { ...config } }]);
     await saveState(db, s);
     await audit(db, "prime", "world.config", WORLD_ID, { ...config });
     return s;
@@ -187,7 +213,7 @@ export async function restoreSnapshot(db: Db, snapshotId: string) {
     const state = structuredClone(snap.state as WorldState);
     state.branch = current.branch + 1;
     await db.delete(worldTicks).where(and(eq(worldTicks.worldId, WORLD_ID), gt(worldTicks.tick, state.tick)));
-    await appendEvents(db, state, [{ type: "world.restored", tick: state.tick, text: `The Prime restored snapshot “${snap.label}” (tick ${snap.tick}). Branch ${state.branch} begins.`, data: { snapshotId, fromTick: current.tick } }]);
+    await appendEvents(db, state, [{ type: "world.restored", tick: state.tick, text: `The Founder restored snapshot “${snap.label}” (tick ${snap.tick}). Branch ${state.branch} begins.`, data: { snapshotId, fromTick: current.tick } }]);
     await saveState(db, state, { status: "paused" });
     await audit(db, "prime", "world.restore", snapshotId, { tick: snap.tick });
     return state;
@@ -196,7 +222,7 @@ export async function restoreSnapshot(db: Db, snapshotId: string) {
 
 export async function resetWorld(db: Db, seed: number, config: WorldConfig) {
   return withWorldLock(async () => {
-    const { state, events } = createWorld(seed, worldConfigSchema.parse(config));
+    const { state, events } = createWorld(seed, worldConfigSchema.parse(config), "Ember Hollow", await primeRoster(db));
     const current = await getWorld(db);
     state.branch = ((current.state as WorldState).branch ?? 0) + 1;
     await db.delete(worldTicks).where(eq(worldTicks.worldId, WORLD_ID));

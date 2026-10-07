@@ -25,7 +25,7 @@ export default function LoginPage() {
       >
         <div className="flex items-center gap-2">
           <LogoMark size={32} />
-          <h1 className="font-display text-xl font-bold">Prime sign-in</h1>
+          <h1 className="font-display text-xl font-bold">Founder sign-in</h1>
         </div>
         <p className="text-sm text-muted">This deployment requires the access token set in SIMLIFE_ACCESS_TOKEN.</p>
         <label className="block text-sm">

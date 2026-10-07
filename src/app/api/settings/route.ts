@@ -5,13 +5,17 @@ import { stopBackgroundRuns } from "@/lib/autonomy/scheduler";
 import { BUILTIN_PRICES } from "@/lib/providers/pricing";
 import {
   autonomySchema,
+  charterSchema,
+  DEFAULT_CHARTER,
   getAutonomy,
+  getCharter,
   getLimits,
   getPricing,
   LIMIT_BOUNDS,
   limitsSchema,
   priceTableSchema,
   setAutonomy,
+  setCharter,
   setLimits,
   setPricing,
 } from "@/lib/settings";
@@ -23,6 +27,8 @@ export const GET = route(async (_req, _ctx, db) =>
     autonomy: await getAutonomy(db),
     pricing: await getPricing(db),
     builtinPrices: BUILTIN_PRICES,
+    charter: await getCharter(db),
+    defaultCharter: DEFAULT_CHARTER,
   }),
 );
 
@@ -30,6 +36,7 @@ const putSchema = z.object({
   limits: limitsSchema.optional(),
   autonomy: autonomySchema.optional(),
   pricing: priceTableSchema.optional(),
+  charter: charterSchema.optional(),
 });
 
 export const PUT = route(async (req, _ctx, db) => {
@@ -44,6 +51,7 @@ export const PUT = route(async (req, _ctx, db) => {
     if (input.autonomy.globalPause || !input.autonomy.backgroundEnabled) out.stoppedBackgroundSessions = stopBackgroundRuns("Global pause");
   }
   if (input.pricing) out.pricing = await setPricing(db, input.pricing);
+  if (input.charter) out.charter = await setCharter(db, input.charter);
   await audit(db, "prime", "settings.update", null, input);
   return json(out);
 });

@@ -76,7 +76,7 @@ export const POST = route(async (req, _ctx, db) => {
       case "apply_recommendation": {
         const rec = await latestRecommendation(db, a.projectId);
         if (!rec?.recommendation) throw new HttpError(409, "There is no clear council recommendation to apply.");
-        await decideProject(db, a.projectId, rec.recommendation, { by: "council", sessionId: rec.sessionId, reason: "Applied by the Prime from the council's recommendation." });
+        await decideProject(db, a.projectId, rec.recommendation, { by: "council", sessionId: rec.sessionId, reason: "Applied by the Founder from the council's recommendation." });
         return json({ ok: true, decision: rec.recommendation });
       }
       case "ask_council": {

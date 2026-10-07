@@ -60,7 +60,7 @@ export function FinalAnswerPanel({
       <div className="rounded-2xl bg-panel-solid p-5 sm:p-6">
         {override && (
           <div className="mb-5 rounded-xl border border-prime/60 bg-prime/10 p-4">
-            <h3 className="font-display text-sm font-bold uppercase tracking-wider text-prime">♛ The Prime&apos;s decision (overrides the council)</h3>
+            <h3 className="font-display text-sm font-bold uppercase tracking-wider text-prime">♛ The Founder&apos;s decision (overrides the council)</h3>
             <p className="mt-2 whitespace-pre-wrap">{override.decision}</p>
             {override.note && <p className="mt-2 text-sm text-muted">Note: {override.note}</p>}
           </div>

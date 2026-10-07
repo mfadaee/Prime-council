@@ -21,7 +21,7 @@ export function json(data: unknown, init: ResponseInit = {}): Response {
 }
 
 function clientKey(req: Request): string {
-  // Local-first: one Prime. Behind a proxy, the forwarded address separates clients.
+  // Local-first: one Founder. Behind a proxy, the forwarded address separates clients.
   return req.headers.get("x-forwarded-for")?.split(",")[0].trim() || "local";
 }
 

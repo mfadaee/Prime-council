@@ -1,6 +1,8 @@
 # Daily improvement workflow
 
-**Current status: inactive.** Nothing in this repository can make a coding agent run tomorrow on its own. That needs an external scheduler plus an authenticated coding runtime, and neither is switched on yet.
+**Current status: active via a Claude Code Routine** (Option C below). It fires daily at 06:17 UTC as a fresh cloud session authenticated to GitHub, and follows [`scripts/daily-improvement/ROUTINE.md`](../scripts/daily-improvement/ROUTINE.md).
+
+The GitHub Actions workflow (Option A) remains available but **inactive**. It needs `ANTHROPIC_API_KEY` and `IMPROVEMENT_GH_TOKEN` secrets plus `DAILY_IMPROVEMENT_ENABLED=true`. Do not enable both options, or two jobs will race each other.
 
 ## What a run does
 
@@ -78,12 +80,21 @@ PRs over 400 changed lines or 15 files, or that delete files, also stay reviewab
 
 This needs the Claude Code CLI (`claude`) and `gh`, both authenticated. Spend and time are capped with `MAX_BUDGET_USD` and `MAX_MINUTES`. Auto-merge still happens only through the GitHub workflow above.
 
-## Option C — Claude Code scheduled routines
+## Option C — Claude Code Routine (active)
 
-If your Claude account offers scheduled cloud sessions (Routines), you can schedule a daily session on this repository using the prompt in `scripts/daily-improvement/PROMPT.md`. The same PR and auto-merge rules apply.
+A daily Routine on the Founder's Claude account starts a fresh cloud session. That session:
+1. Attaches this repository and opens one improvement PR.
+2. Waits for CI.
+3. Squash-merges the PR **only** if the repository's eligibility rules say `eligible` **and** every check on the PR head succeeded.
+4. Leaves everything else open for review.
+
+Because the merge gate is enforced by the agent rather than by GitHub branch protection, the rules and their tests live in this repository (`src/lib/improvements/eligibility.ts`).
+
+Manage it in the Claude app (Routines): pause, run now, or delete it. Run costs count against the Founder's Claude plan, not an API key.
 
 ## Verification status
 
 - **Eligibility rules:** covered by unit tests (`tests/unit/eligibility.test.ts`). The CLI was dry-run locally.
 - **Workflow YAML:** parses.
-- **Not yet run:** none of the workflows have run, because the GitHub repository had not been created when they were written. Treat the first run as a test and watch it.
+- **CI:** runs on GitHub Actions for every PR and push to `main`.
+- **Routine:** the Routine's results are recorded per run in `data/improvements.json` and at `/improvements`.

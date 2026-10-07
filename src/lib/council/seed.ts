@@ -26,7 +26,7 @@ export const DEFAULT_PROVIDERS: {
 ];
 
 export const DEFAULT_MEMBERS: { id: string; name: string; role: CouncilRole; color: string; monogram: string; persona: string }[] = [
-  { id: "aurelia", name: "Aurelia", role: "chair", color: "#F5B942", monogram: "A", persona: "Calm, precise, keeps the council focused on what the Prime actually asked." },
+  { id: "aurelia", name: "Aurelia", role: "chair", color: "#F5B942", monogram: "A", persona: "Calm and precise; keeps the Primes focused on the charter and on what the Founder actually asked." },
   { id: "quill", name: "Quill", role: "analyst", color: "#4CC3FF", monogram: "Q", persona: "Clear and structured; prefers a direct answer followed by the reasoning that supports it." },
   { id: "vex", name: "Vex", role: "skeptic", color: "#FF7A6B", monogram: "V", persona: "Fair-minded; challenges what is weak and acknowledges what is strong." },
   { id: "lumen", name: "Lumen", role: "researcher", color: "#3DDC97", monogram: "L", persona: "Careful with sources; distinguishes verified, likely and unverified claims." },
@@ -34,13 +34,22 @@ export const DEFAULT_MEMBERS: { id: string; name: string; role: CouncilRole; col
   { id: "weave", name: "Weave", role: "synthesizer", color: "#FF8FCB", monogram: "W", persona: "Even-handed; writes the answer the evidence supports and names what remains open." },
 ];
 
-/** First-boot model assignment: a configured provider if the Prime set one, else demo. */
-function defaultAssignment(): { providerId: string; model: string } {
-  const p = process.env.SIMLIFE_DEFAULT_PROVIDER?.trim();
-  const m = process.env.SIMLIFE_DEFAULT_MODEL?.trim();
-  if (p && m) return { providerId: p, model: m };
-  if (process.env.ANTHROPIC_API_KEY?.trim()) return { providerId: "anthropic", model: "claude-opus-5-5" };
-  return { providerId: "demo", model: "demo-simulated" };
+/**
+ * First-boot seat assignment: spread the Primes across every model family the
+ * Founder configured (key/URL plus a model id), so the council is as diverse as
+ * possible. Model ids come from the environment; only Anthropic has a default.
+ * With nothing configured, every Prime starts on the labelled demo provider.
+ */
+export function modelFamilies(env: NodeJS.ProcessEnv = process.env): { providerId: string; model: string }[] {
+  const v = (k: string) => env[k]?.trim() || "";
+  const out: { providerId: string; model: string }[] = [];
+  if (v("SIMLIFE_DEFAULT_PROVIDER") && v("SIMLIFE_DEFAULT_MODEL")) return [{ providerId: v("SIMLIFE_DEFAULT_PROVIDER"), model: v("SIMLIFE_DEFAULT_MODEL") }];
+  if (v("ANTHROPIC_API_KEY")) out.push({ providerId: "anthropic", model: v("ANTHROPIC_MODEL") || "claude-opus-5-5" });
+  if (v("OPENAI_API_KEY") && v("OPENAI_MODEL")) out.push({ providerId: "openai", model: v("OPENAI_MODEL") });
+  if (v("GEMINI_API_KEY") && v("GEMINI_MODEL")) out.push({ providerId: "google", model: v("GEMINI_MODEL") });
+  if (v("OLLAMA_MODEL")) out.push({ providerId: "ollama", model: v("OLLAMA_MODEL") });
+  if (v("OPENAI_COMPAT_BASE_URL") && v("OPENAI_COMPAT_MODEL")) out.push({ providerId: "compat", model: v("OPENAI_COMPAT_MODEL") });
+  return out.length ? out : [{ providerId: "demo", model: "demo-simulated" }];
 }
 
 export async function ensureSeeded(db: Db): Promise<void> {
@@ -54,10 +63,10 @@ export async function ensureSeeded(db: Db): Promise<void> {
 
   const anyMember = await db.select({ id: members.id }).from(members).limit(1);
   if (!anyMember.length) {
-    const a = defaultAssignment();
+    const families = modelFamilies();
     await db
       .insert(members)
-      .values(DEFAULT_MEMBERS.map((m, i) => ({ ...m, seat: i, providerId: a.providerId, model: a.model, enabled: true })))
+      .values(DEFAULT_MEMBERS.map((m, i) => ({ ...m, seat: i, ...families[i % families.length], enabled: true })))
       .onConflictDoNothing();
   }
 }
