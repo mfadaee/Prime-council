@@ -28,6 +28,12 @@ test("world: step, council decision, snapshot and restore", async ({ page, reque
   await docket.first().getByRole("button", { name: "Ask the Primes" }).click();
   await expect(docket.first().getByRole("link", { name: "Council session" })).toBeVisible();
   await expect(page.getByText(/The Founder asks the Primes to deliberate/)).toBeVisible();
+
+  // The linked session leads back to the world's decisions.
+  const sessionHref = await docket.first().getByRole("link", { name: "Council session" }).getAttribute("href");
+  await page.goto(sessionHref!);
+  await page.getByRole("link", { name: /Back to the world/ }).click();
+  await expect(page).toHaveURL(/\/world$/);
   const name = (await docket.first().locator("p").first().textContent())!.trim();
   await docket.first().getByRole("button", { name: "Approve" }).click();
   await expect(page.getByText(`The Founder approves ${name}.`)).toBeVisible();
