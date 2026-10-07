@@ -8,7 +8,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 <!-- END:nextjs-agent-rules -->
 
-## Simulated Life — notes for coding agents
+## Prime Council — notes for coding agents
 
 Read `CONTRIBUTING.md` (architecture rules) and `docs/ARCHITECTURE.md` first. The non-negotiables:
 

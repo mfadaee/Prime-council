@@ -1,6 +1,6 @@
 # Daily improvement run — instructions for the coding agent
 
-You are making **one bounded, useful improvement** to Simulated Life and opening a pull request for it. Work only inside this repository.
+You are making **one bounded, useful improvement** to Prime Council and opening a pull request for it. Work only inside this repository.
 
 ## 1. Understand the current state (read-only)
 

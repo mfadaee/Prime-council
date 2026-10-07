@@ -25,16 +25,16 @@ test("world: step, council decision, snapshot and restore", async ({ page, reque
   await expect(page.getByText("Snapshot saved")).toBeVisible();
 
   // Ask the (demo) council, then decide as Prime.
-  await docket.first().getByRole("button", { name: "Ask the council" }).click();
+  await docket.first().getByRole("button", { name: "Ask the Primes" }).click();
   await expect(docket.first().getByRole("link", { name: "Council session" })).toBeVisible();
-  await expect(page.getByText(/The Prime asks the council to deliberate/)).toBeVisible();
+  await expect(page.getByText(/The Founder asks the Primes to deliberate/)).toBeVisible();
   const name = (await docket.first().locator("p").first().textContent())!.trim();
   await docket.first().getByRole("button", { name: "Approve" }).click();
-  await expect(page.getByText(`The Prime approves ${name}.`)).toBeVisible();
+  await expect(page.getByText(`The Founder approves ${name}.`)).toBeVisible();
 
   // Select an inhabitant from the map.
   await page.getByRole("button", { name: /^Ada, farmer/ }).click();
-  await expect(page.getByRole("dialog")).toContainText("A simulated inhabitant");
+  await expect(page.getByRole("dialog")).toContainText("An agent created by");
   await page.keyboard.press("Escape");
 
   // Restore the snapshot: the project is back on the docket, on a new branch.

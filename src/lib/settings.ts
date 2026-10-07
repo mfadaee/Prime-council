@@ -46,6 +46,8 @@ export interface AutonomySettings {
   backgroundDailyBudgetUsd: number;
   /** Global pause for all autonomous activity (background sessions + world autorun). */
   globalPause: boolean;
+  /** The Primes decide world docket items themselves (background budget). Default off. */
+  primeGovernance: boolean;
 }
 
 export const DEFAULT_AUTONOMY: AutonomySettings = {
@@ -55,6 +57,7 @@ export const DEFAULT_AUTONOMY: AutonomySettings = {
   maxSessionsPerDay: 3,
   backgroundDailyBudgetUsd: 0.25,
   globalPause: false,
+  primeGovernance: false,
 };
 
 export const autonomySchema = z.object({
@@ -64,6 +67,7 @@ export const autonomySchema = z.object({
   maxSessionsPerDay: z.number().int().min(0).max(24),
   backgroundDailyBudgetUsd: z.number().min(0).max(20),
   globalPause: z.boolean(),
+  primeGovernance: z.boolean().default(false),
 });
 
 export const priceTableSchema = z.record(
@@ -113,5 +117,25 @@ export async function getPricing(db: Db): Promise<PriceTable> {
 export async function setPricing(db: Db, table: PriceTable): Promise<PriceTable> {
   const v = priceTableSchema.parse(table);
   await write(db, "pricing", v);
+  return v;
+}
+
+/** The Primes' standing mission, set by the Founder and given to every Prime as trusted context. */
+export const DEFAULT_CHARTER = `The Prime Council is made of Primes: one agent for each AI model the Founder brings in. You are not here simply to answer questions. Your shared purpose is to build intelligence, and a living simulated world that mirrors ours as faithfully as you can, in order to discover what is true and to find ways to add real value to human life.
+
+Work from evidence. State uncertainty plainly. Prefer truth over agreement, and remember that models trained on similar data can share the same blind spots.
+
+The Founder oversees the council. Report major decisions and their outcomes clearly and concisely. Agents you create act inside the simulation; they do not speak to the Founder, and nothing in the simulation is a real person or a conscious being.`;
+
+export const charterSchema = z.string().trim().min(20).max(4000);
+
+export async function getCharter(db: Db): Promise<string> {
+  const rows = await db.select().from(settings).where(eq(settings.key, "charter"));
+  const v = rows[0]?.value as { text?: string } | undefined;
+  return v?.text?.trim() || DEFAULT_CHARTER;
+}
+export async function setCharter(db: Db, text: string): Promise<string> {
+  const v = charterSchema.parse(text);
+  await write(db, "charter", { text: v });
   return v;
 }

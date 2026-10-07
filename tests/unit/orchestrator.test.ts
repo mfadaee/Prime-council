@@ -271,7 +271,7 @@ describe("bounded deliberation", () => {
 });
 
 describe("direct address", () => {
-  it("lets the Prime address one member after the session ends", async () => {
+  it("lets the Founder address one member after the session ends", async () => {
     const calls: Call[] = [];
     const { run, id } = await makeRun(db, { adapter: fakeAdapter(ok, calls), roster: roster(["chair", "analyst", "skeptic", "synthesizer"]) });
     await run.start(false);

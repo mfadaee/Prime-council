@@ -24,9 +24,9 @@ export function Composer({ compact = false }: { compact?: boolean }) {
   };
 
   return (
-    <form onSubmit={submit} className={`panel ${compact ? "p-3" : "p-4"}`} aria-label="Ask the council">
+    <form onSubmit={submit} className={`panel ${compact ? "p-3" : "p-4"}`} aria-label="Ask the Primes">
       <label htmlFor="question" className="font-display text-sm font-bold text-prime">
-        ♛ Ask the council
+        ♛ Ask the Primes
       </label>
       <div className="mt-2 flex flex-col gap-2 sm:flex-row">
         <textarea
@@ -38,7 +38,7 @@ export function Composer({ compact = false }: { compact?: boolean }) {
           onKeyDown={(e) => {
             if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) (e.currentTarget.form as HTMLFormElement).requestSubmit();
           }}
-          placeholder="What should the council deliberate on?"
+          placeholder="What should the Primes deliberate on?"
           maxLength={4000}
           required
         />

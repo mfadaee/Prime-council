@@ -34,7 +34,7 @@ export function ImprovementsPage() {
       <div>
         <h1 className="font-display text-2xl font-bold">Improvement history</h1>
         <p className="max-w-3xl text-sm text-muted">
-          What changed in Simulated Life, why, and how it was validated. The daily improvement job adds one entry per run in its pull request; entries appear here once merged.
+          What changed in Prime Council, why, and how it was validated. The daily improvement job adds one entry per run in its pull request; entries appear here once merged.
         </p>
       </div>
 

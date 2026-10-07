@@ -76,7 +76,7 @@ describe("world store", () => {
     const after = (await getWorld(db)).state as WorldState;
     expect(after.projects.find((p) => p.id === project.id)!.status).toBe("awaiting_council");
 
-    // The Prime decides; the decision is recorded and audited.
+    // The Founder decides; the decision is recorded and audited.
     const decided = await decideProject(db, project.id, "approve", { by: "prime" });
     expect(["approved", "active"]).toContain(decided.projects.find((p) => p.id === project.id)!.status);
     const events = await recentEvents(db);

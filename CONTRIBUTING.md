@@ -1,6 +1,6 @@
 # Contributing
 
-Thanks for improving Simulated Life. Contributors may be humans or coding agents; both follow the same rules.
+Thanks for improving Prime Council. Contributors may be humans or coding agents; both follow the same rules.
 
 ## Workflow
 

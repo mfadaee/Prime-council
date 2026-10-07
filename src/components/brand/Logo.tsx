@@ -1,11 +1,11 @@
 /**
- * Simulated Life mark: six distinct points of light on a ring, joined into a
+ * Prime Council mark: six distinct points of light on a ring, joined into a
  * constellation around a central star — separate intelligences forming one
  * living community. Original artwork; no third-party marks.
  */
 const POINTS = ["#F5B942", "#4CC3FF", "#FF7A6B", "#3DDC97", "#B79CFF", "#FF8FCB"];
 
-export function LogoMark({ size = 36, title = "Simulated Life" }: { size?: number; title?: string }) {
+export function LogoMark({ size = 36, title = "Prime Council" }: { size?: number; title?: string }) {
   const pts = POINTS.map((c, i) => {
     const a = (Math.PI * 2 * i) / POINTS.length - Math.PI / 2;
     return { c, x: 24 + Math.cos(a) * 16, y: 24 + Math.sin(a) * 16 };

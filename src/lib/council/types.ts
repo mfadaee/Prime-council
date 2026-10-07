@@ -22,7 +22,7 @@ export const PROVIDER_KINDS = [
 ] as const;
 export type ProviderKind = (typeof PROVIDER_KINDS)[number];
 
-/** Integration status shown to the Prime. Never claims more than was checked. */
+/** Integration status shown to the Founder. Never claims more than was checked. */
 export type ProviderStatus =
   | "available" // a live check succeeded
   | "configured" // credentials/URL present, not yet checked
@@ -80,7 +80,7 @@ export interface RosterEntry extends MemberProfile {
 
 export interface Limits {
   maxRounds: number; // critique/resolve rounds (default 1)
-  hardMaxRounds: number; // absolute cap, including Prime-requested rounds
+  hardMaxRounds: number; // absolute cap, including Founder-requested rounds
   concurrency: number;
   maxOutputTokens: number;
   timeoutMs: number;
@@ -211,7 +211,7 @@ export type CouncilEvent =
 
 export type StoredEvent = CouncilEvent & { seq: number; at: string; simulated: boolean };
 
-// ---------------------------------------------------------- Prime controls ---
+// ---------------------------------------------------------- Founder controls ---
 
 export type PrimeAction =
   | { type: "stop" }

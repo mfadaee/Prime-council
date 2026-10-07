@@ -38,6 +38,7 @@ export function SessionView({ sessionId }: { sessionId: string }) {
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
   const [connected, setConnected] = useState(false);
+  const [showTalk, setShowTalk] = useState<boolean | null>(null); // null = default for this session's origin
   const [now, setNow] = useState(() => Date.now());
   const seen = useRef(new Set<number>());
 
@@ -106,7 +107,7 @@ export function SessionView({ sessionId }: { sessionId: string }) {
       })),
     [view.roster],
   );
-  const nameOf = useCallback((id: string) => (id === "prime" ? "the Prime" : (view.roster.find((m) => m.id === id)?.name ?? id)), [view.roster]);
+  const nameOf = useCallback((id: string) => (id === "prime" ? "the Founder" : (view.roster.find((m) => m.id === id)?.name ?? id)), [view.roster]);
 
   const speech: Speech | null = useMemo(() => {
     if (!view.speaking) return null;
@@ -157,7 +158,9 @@ export function SessionView({ sessionId }: { sessionId: string }) {
       {/* Question + status */}
       <section className="panel flex flex-wrap items-start gap-3 p-4">
         <div className="min-w-0 flex-1">
-          <p className="text-xs font-semibold uppercase tracking-wider text-prime">The Prime asks</p>
+          <p className="text-xs font-semibold uppercase tracking-wider text-prime">
+            {session.origin === "governance" ? "The Primes decide (Prime governance)" : session.origin === "background" ? "The Primes discuss (background)" : "The Founder asks"}
+          </p>
           <h1 className="mt-1 font-display text-lg font-bold leading-snug sm:text-xl">{full.question || session.question}</h1>
         </div>
         <StatusBadge status={full.status} />
@@ -195,10 +198,10 @@ export function SessionView({ sessionId }: { sessionId: string }) {
             selectedId={selected}
           />
 
-          {/* Prime controls */}
-          <section className="panel p-3" aria-label="Prime controls">
+          {/* Founder controls */}
+          <section className="panel p-3" aria-label="Founder controls">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="mr-1 font-display text-sm font-bold text-prime">♛ Prime controls</span>
+              <span className="mr-1 font-display text-sm font-bold text-prime">♛ Founder controls</span>
               <button className="btn btn-danger btn-sm" disabled={!running || busy} onClick={() => act({ type: "stop" }, "Stopping…")}>
                 ■ Stop
               </button>
@@ -283,7 +286,7 @@ export function SessionView({ sessionId }: { sessionId: string }) {
                 ? undefined
                 : async (kind) => {
                     const content =
-                      kind === "interest" ? full.question : `Q: ${full.question.slice(0, 200)} — ${full.override ? `Prime decided: ${full.override.decision}` : `Council answered: ${full.final?.answer ?? ""}`}`;
+                      kind === "interest" ? full.question : `Q: ${full.question.slice(0, 200)} — ${full.override ? `Founder decided: ${full.override.decision}` : `Council answered: ${full.final?.answer ?? ""}`}`;
                     try {
                       await api("/api/memory", { body: { kind, content: content.slice(0, 1000), source: "session", sourceRef: sessionId } });
                       setNotice(kind === "interest" ? "Saved as an interest (see Memory)" : "Saved to memory (see Memory)");
@@ -296,7 +299,19 @@ export function SessionView({ sessionId }: { sessionId: string }) {
         </div>
 
         <div className="min-w-0 lg:sticky lg:top-20 lg:self-start">
-          <Transcript messages={view.messages} notes={view.notes} members={members} speakingMessageId={view.speaking?.messageId ?? null} onSelectMember={setSelected} live={running && cursor === null} />
+          {(showTalk ?? !["background", "governance"].includes(session.origin)) ? (
+            <Transcript messages={view.messages} notes={view.notes} members={members} speakingMessageId={view.speaking?.messageId ?? null} onSelectMember={setSelected} live={running && cursor === null} />
+          ) : (
+            <section className="panel p-4 text-sm" aria-label="Deliberation hidden">
+              <h2 className="font-display text-base font-bold">Deliberation</h2>
+              <p className="mt-1 text-muted">
+                The Primes started this session themselves. Their decision is shown on the left; the {view.messages.length} messages behind it are hidden so you only see what matters.
+              </p>
+              <button className="btn btn-sm mt-3" onClick={() => setShowTalk(true)}>
+                Show the full deliberation
+              </button>
+            </section>
+          )}
         </div>
       </div>
 
@@ -409,7 +424,7 @@ export function SessionView({ sessionId }: { sessionId: string }) {
           className="space-y-3"
         >
           <p className="text-sm text-muted">Your decision is recorded as final. The council&apos;s answer is kept alongside it for reference.</p>
-          <textarea className="field min-h-28" value={text} onChange={(e) => setText(e.target.value)} placeholder="The Prime's decision" required maxLength={8000} autoFocus />
+          <textarea className="field min-h-28" value={text} onChange={(e) => setText(e.target.value)} placeholder="The Founder's decision" required maxLength={8000} autoFocus />
           <button className="btn btn-prime" disabled={busy || !text.trim()}>
             Record decision
           </button>

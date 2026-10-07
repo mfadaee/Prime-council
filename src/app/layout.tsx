@@ -8,8 +8,8 @@ const inter = Inter({ variable: "--font-inter", subsets: ["latin"] });
 const grotesk = Space_Grotesk({ variable: "--font-grotesk", subsets: ["latin"], weight: ["500", "600", "700"] });
 
 export const metadata: Metadata = {
-  title: { default: "Simulated Life", template: "%s · Simulated Life" },
-  description: "An AI council that deliberates for its Prime and grows into a simulated society.",
+  title: { default: "Prime Council", template: "%s · Prime Council" },
+  description: "One Prime per AI model, building intelligence and a simulated world to find truth and add value to human life.",
 };
 
 export const viewport: Viewport = { themeColor: "#070a1a", colorScheme: "dark" };
@@ -30,7 +30,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             {children}
           </main>
           <footer className="mx-auto w-full max-w-[1500px] px-5 pb-6 text-xs text-faint">
-            Simulated Life — council members are AI models and inhabitants are simulations, not people or conscious beings. Costs are estimates.
+            Prime Council — Primes are AI models; the agents they create are simulations, not people or conscious beings. Costs are estimates.
           </footer>
         </div>
       </body>

@@ -1,6 +1,7 @@
 /**
  * World simulation types. Shared by the engine (pure), the server store and the UI.
- * All money and resources are fictional.
+ * All money and resources are fictional. Inhabitants are agents created by the
+ * Primes; they act in the simulation and are not people.
  */
 export const RESOURCES = ["food", "wood", "tools", "knowledge"] as const;
 export type Resource = (typeof RESOURCES)[number];
@@ -36,7 +37,9 @@ export interface Inhabitant {
   inventory: Stock;
   energy: number; // 0..100
   hunger: number; // 0..100
-  relationships: Record<string, number>; // -1..1
+  relationships: Record<string, number>; // -1..1, strongest ties only (bounded)
+  /** Id of the Prime that created this agent (or "council"). */
+  createdBy: string;
   action: { kind: ActionKind; locationId: string; detail: string };
   joinedTick: number;
 }
@@ -77,7 +80,7 @@ export interface WorldConfig {
   maxPopulation: number;
   maxOrganizations: number;
   growthEnabled: boolean;
-  /** Projects costing more than this (credits) need a council/Prime decision. */
+  /** Projects costing more than this (credits) need a council/Founder decision. */
   councilThresholdCredits: number;
   /** Apply a council recommendation automatically when it is unambiguous. Off by default. */
   councilAutoApply: boolean;
@@ -93,6 +96,8 @@ export const DEFAULT_WORLD_CONFIG: WorldConfig = {
 
 export interface WorldState {
   version: 1;
+  /** The Primes who create and govern agents in this world (snapshot of the council). */
+  primes: { id: string; name: string }[];
   name: string;
   seed: number;
   rng: number;

@@ -1,5 +1,5 @@
 /**
- * Database schema for Simulated Life.
+ * Database schema for Prime Council.
  *
  * One schema serves every milestone (council, memory, world, audit). Extend
  * additively: add nullable columns or new tables, never repurpose existing ones.
@@ -142,7 +142,7 @@ export const settings = pgTable("settings", {
   updatedAt: updatedAt(),
 });
 
-/** Information the Prime approved for storage. Inspectable, editable, disableable. */
+/** Information the Founder approved for storage. Inspectable, editable, disableable. */
 export const memoryItems = pgTable("memory_items", {
   id: text("id").primaryKey(),
   kind: text("kind").notNull(), // interest | fact | preference | decision | imported | note
@@ -166,7 +166,7 @@ export const suggestions = pgTable("suggestions", {
   createdAt: createdAt(),
 });
 
-/** Audit trail for tool use, world-changing actions, settings and Prime overrides. */
+/** Audit trail for tool use, world-changing actions, settings and Founder overrides. */
 export const auditLog = pgTable(
   "audit_log",
   {

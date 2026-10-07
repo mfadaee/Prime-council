@@ -51,6 +51,7 @@ const OUTCOME: Record<string, string> = {
   waiting: "Waiting for the interval to elapse",
   "nothing-scheduled": "Nothing scheduled",
   started: "Started a background session",
+  "governance-started": "The Primes took up a world decision",
 };
 
 const fetchAll = () =>

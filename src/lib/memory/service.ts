@@ -55,7 +55,7 @@ export async function deleteMemory(db: Db, id: string) {
 /**
  * Split pasted notes or an exported conversation list into candidate items.
  * Accepts plain lines, Markdown bullets, or a JSON array of strings / {content}.
- * Imported content is untrusted: items start DISABLED until the Prime reviews
+ * Imported content is untrusted: items start DISABLED until the Founder reviews
  * them, and are always wrapped as untrusted data when used in prompts.
  */
 export function parseImport(text: string): string[] {

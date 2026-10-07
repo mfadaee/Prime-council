@@ -4,7 +4,7 @@ import type { Db } from "@/lib/db/client";
 import { members, providers, usageRecords } from "@/lib/db/schema";
 import { costUsd, estimateTokens } from "@/lib/providers/pricing";
 import { ProviderError } from "@/lib/providers/types";
-import { getAutonomy, getLimits, getPricing } from "@/lib/settings";
+import { getAutonomy, getCharter, getLimits, getPricing } from "@/lib/settings";
 import { BudgetGuard } from "./budget";
 import { systemPrompt } from "./prompts";
 import { buildRoster, dailySpend, makeResolver } from "./service";
@@ -39,7 +39,7 @@ export async function singleCall(
     0,
     await dailySpend(db),
   );
-  const system = systemPrompt(pick);
+  const system = systemPrompt(pick, await getCharter(db));
   const maxOut = Math.min(limits.maxOutputTokens, 800);
   const reservation = guard.reserve(costUsd(resolved.price, estimateTokens(system + opts.prompt), maxOut));
   if (!reservation.ok) return { error: reservation.reason };

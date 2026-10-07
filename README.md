@@ -1,17 +1,18 @@
-# Simulated Life
+# Prime Council
 
-An interactive **AI council** that deliberates for you — *the Prime* — and grows into a **persistent simulated society**.
+**A prime council that builds intelligence from scratch.**
 
-You ask a question. The council meets in a chamber:
+You are **the Founder**. The council is made of **Primes**, one agent for each AI model you connect: Claude, GPT, Gemini, local models and others. Under a charter you set, the Primes:
+- deliberate together;
+- decide;
+- govern a simulated world that mirrors ours, to find what is true and add value to human life;
+- create the agents that live in that world.
 
-1. The Chair interprets the request.
-2. Members answer independently, then critique each other.
-3. Material disagreements are resolved.
-4. The Synthesizer writes the best supported answer.
+You speak only with the Primes. The agents they create act in the world; you see **major decisions and outcomes** in the Chronicle, not the conversations behind them. Those stay one click away if you want them.
 
-Every animation in the chamber is driven by a real backend event. Simulated (demo) activity is always labelled.
+Every animation is driven by a real backend event. Simulated (demo) activity is always labelled. Primes are AI models, and agents are simulations: not people and not conscious beings.
 
-> Council members are AI models and inhabitants are simulations — not people and not conscious beings.
+See [docs/VISION.md](docs/VISION.md) for the full vision.
 
 ## Quick start
 
@@ -22,7 +23,7 @@ npm install
 npm run dev            # http://127.0.0.1:3000 — demo mode, embedded Postgres, no keys needed
 ```
 
-To use real models, copy `.env.example` to `.env.local`, add one or more keys and restart. Then assign models to seats on the **Members** page and click "Check now" to verify each provider.
+To use real models, copy `.env.example` to `.env.local`, add keys and a model id for each model family, and restart. On first start, the Primes are spread across every configured family (one Prime per AI model where possible). Then verify each provider with "Check now" on the **Primes** page.
 
 ```bash
 cp .env.example .env.local
@@ -65,7 +66,9 @@ With no provider configured, every seat uses the built-in **demo provider**:
 
 ## What you can do
 
-**Council mode** (`/`, `/sessions/:id`)
+**Council & Chronicle** (`/`, `/sessions/:id`)
+- The home page shows the Primes, your outcome tiles and the **Chronicle** of major decisions and world milestones.
+- **The charter** (Settings) is the Primes' standing mission, given to every Prime as trusted context.
 - Ask a question and watch the chamber live: who is preparing, speaking, reviewing, agreeing, challenging, blocked or offline, plus animated links showing who responds to whom.
 - Read the synchronized transcript. Each member's published contribution expands to show rationale, evidence, assumptions and critiques (never hidden chain-of-thought).
 - Act as Prime: **stop**, **request another round**, **challenge a claim**, **address one member**, **exclude/re-include** a member, **override** the decision.
@@ -73,7 +76,7 @@ With no provider configured, every seat uses the built-in **demo provider**:
 - Track elapsed time, tokens and **estimated** cost.
 - **Replay** any finished session on its timeline.
 
-**Members** (`/members`): configure providers (status: available, configured, unavailable, not configured, disabled, demo), check them live, and choose each seat's role, persona, provider and model.
+**Primes** (`/members`): give each Prime its own model family where possible (the council warns when Primes share a model); configure providers (status: available, configured, unavailable, not configured, disabled, demo), check them live, and choose each seat's role, persona, provider and model.
 
 **Settings** (`/settings`): rounds, concurrency, token, timeout, retry, session time and spending limits; the model price table; autonomy switches and the global pause.
 

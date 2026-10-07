@@ -115,12 +115,19 @@ function makeInhabitant(state: WorldState, role: InhabitantRole, nameIdx: number
     relationships: {},
     action: { kind: "idle", locationId: home?.id ?? work.id, detail: "Settling in" },
     joinedTick: state.tick,
+    createdBy: state.primes.length ? state.primes[nameIdx % state.primes.length].id : "council",
   };
 }
 
-export function createWorld(seed: number, config: Partial<WorldConfig> = {}, name = "Ember Hollow"): { state: WorldState; events: WorldEvent[] } {
+export function createWorld(
+  seed: number,
+  config: Partial<WorldConfig> = {},
+  name = "Ember Hollow",
+  primes: { id: string; name: string }[] = [],
+): { state: WorldState; events: WorldEvent[] } {
   const state: WorldState = {
     version: 1,
+    primes,
     name,
     seed,
     rng: seed >>> 0,
@@ -155,7 +162,7 @@ export function createWorld(seed: number, config: Partial<WorldConfig> = {}, nam
       {
         type: "world.created",
         tick: 0,
-        text: `${name} is founded by ${state.inhabitants.map((i) => i.name).join(", ")}. The treasury holds ${credits(state.treasury.cents)} credits.`,
+        text: `${name} is founded. ${primes.length ? `The Primes (${primes.map((p) => p.name).join(", ")}) create its first agents` : "The council creates its first agents"}: ${state.inhabitants.map((i) => i.name).join(", ")}. The treasury holds ${credits(state.treasury.cents)} fictional credits.`,
         data: { seed, population: state.inhabitants.length },
       },
     ],
@@ -181,10 +188,22 @@ function transfer(s: WorldState, from: "treasury" | Inhabitant, to: "treasury" |
   return true;
 }
 
+const MAX_TIES = 12;
+
+/** Keep only the strongest ties so state stays bounded as populations grow. */
+function prune(rel: Record<string, number>) {
+  const keys = Object.keys(rel);
+  if (keys.length <= MAX_TIES) return;
+  keys.sort((x, y) => rel[x] - rel[y] || (x < y ? -1 : 1));
+  for (const k of keys.slice(0, keys.length - MAX_TIES)) delete rel[k];
+}
+
 function bond(a: Inhabitant, b: Inhabitant, amount: number) {
   if (a.id === b.id) return;
   a.relationships[b.id] = r2(clamp((a.relationships[b.id] ?? 0) + amount, -1, 1));
   b.relationships[a.id] = r2(clamp((b.relationships[a.id] ?? 0) + amount, -1, 1));
+  prune(a.relationships);
+  prune(b.relationships);
 }
 
 function guildBonus(s: WorldState, i: Inhabitant): number {
@@ -577,7 +596,7 @@ function communityRules(s: WorldState, events: WorldEvent[]) {
     if (next) fund(s, next, events);
   }
 
-  // 4. Growth: a newcomer arrives when there is food, housing and room under the Prime's cap.
+  // 4. Growth: a newcomer arrives when there is food, housing and room under the Founder's cap.
   const pop = s.inhabitants.length;
   const housing = s.locations.filter((l) => l.kind === "home").reduce((n, h) => n + (h.capacity ?? 2), 0);
   if (s.config.growthEnabled && pop < s.config.maxPopulation && pop < housing && s.treasury.stock.food >= pop * 3 && s.treasury.cents >= 1500) {
@@ -587,7 +606,13 @@ function communityRules(s: WorldState, events: WorldEvent[]) {
     const newcomer = makeInhabitant(s, role, s.inhabitants.length, 0);
     transfer(s, "treasury", newcomer, 1500);
     s.inhabitants.push(newcomer);
-    events.push({ type: "inhabitant.arrived", tick: s.tick, text: `${newcomer.name} arrives and settles as a ${role}, with 15.00 credits from the treasury.`, data: { inhabitantId: newcomer.id, role } });
+    const creator = s.primes.find((p) => p.id === newcomer.createdBy)?.name;
+    events.push({
+      type: "inhabitant.arrived",
+      tick: s.tick,
+      text: `${creator ? `${creator} creates a new agent: ` : ""}${newcomer.name} settles as a ${role}, with 15.00 credits from the treasury.`,
+      data: { inhabitantId: newcomer.id, role, createdBy: newcomer.createdBy },
+    });
   }
 
   // 5. Organisations: three or more people in one trade found a guild (+10% output).
@@ -652,7 +677,7 @@ export function step(input: WorldState): { state: WorldState; events: WorldEvent
 }
 
 /**
- * Apply a council or Prime decision on a project awaiting review — the explicit
+ * Apply a council or Founder decision on a project awaiting review — the explicit
  * link from deliberation to the world.
  */
 export function decide(
@@ -667,7 +692,7 @@ export function decide(
   const events: WorldEvent[] = [];
   p.decidedBy = meta.by;
   p.sessionId = meta.sessionId ?? null;
-  const who = meta.by === "council" ? "The council" : "The Prime";
+  const who = meta.by === "council" ? "The Prime Council" : "The Founder";
   if (decision === "approve") {
     p.status = "approved";
     events.push({ type: "council.decision", tick: s.tick, text: `${who} approves ${p.name}.${meta.reason ? ` ${meta.reason}` : ""}`, data: { projectId, decision, ...meta } });
@@ -691,7 +716,7 @@ export function councilQuestion(s: WorldState, p: Project): string {
   const mats = Object.entries(p.materials)
     .map(([r, n]) => `${n} ${r}`)
     .join(", ");
-  return `[Simulated world: ${s.name} — fictional economy] ${proposer?.name ?? "An inhabitant"} (${proposer?.role ?? "?"}) proposes "${p.name}". Cost: ${credits(p.costCents)} fictional credits plus ${mats || "no materials"}; ${p.workRequired} units of construction work. Benefit: ${benefitText(p.kind)} Rationale given: ${p.rationale}
+  return `[Simulated world: ${s.name} — fictional economy, built by the Primes under their charter] ${proposer?.name ?? "An inhabitant"} (${proposer?.role ?? "?"}) proposes "${p.name}". Cost: ${credits(p.costCents)} fictional credits plus ${mats || "no materials"}; ${p.workRequired} units of construction work. Benefit: ${benefitText(p.kind)} Rationale given: ${p.rationale}
 Current state: ${s.inhabitants.length} inhabitants, treasury ${credits(s.treasury.cents)} credits, stores ${JSON.stringify(s.treasury.stock)}, day ${dayOf(s.tick)}.
 Should the community fund this project now? Begin your final answer with "DECISION: APPROVE" or "DECISION: REJECT", then explain.`;
 }

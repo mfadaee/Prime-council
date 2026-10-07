@@ -1,11 +1,13 @@
 import "server-only";
-import { and, asc, desc, eq, gte } from "drizzle-orm";
+import { and, asc, desc, eq, gte, inArray } from "drizzle-orm";
 import { getDb, type Db } from "@/lib/db/client";
 import { councilSessions, suggestions } from "@/lib/db/schema";
 import { runs } from "@/lib/council/orchestrator";
 import { audit, dailySpend, startSession } from "@/lib/council/service";
 import { getAutonomy } from "@/lib/settings";
 import { startOfUtcDay } from "@/lib/util";
+import { getWorld, requestCouncil } from "@/lib/sim/store";
+import type { WorldState } from "@/lib/sim/types";
 import { ruleSuggestions } from "./suggestions";
 
 /**
@@ -13,7 +15,7 @@ import { ruleSuggestions } from "./suggestions";
  *
  * Every tick it may:
  *  1. top up the suggestion queue with free rule-based suggestions (if enabled);
- *  2. start ONE background session for the oldest suggestion the Prime marked
+ *  2. start ONE background session for the oldest suggestion the Founder marked
  *     "scheduled" — only if background sessions are enabled, nothing is paused,
  *     the per-day count and background budget allow it, and the interval elapsed.
  * Background sessions run with one critique round and the background budget.
@@ -26,7 +28,8 @@ export type TickOutcome =
   | "budget"
   | "waiting"
   | "nothing-scheduled"
-  | "started";
+  | "started"
+  | "governance-started";
 
 export interface SchedulerStatus {
   active: boolean;
@@ -69,17 +72,28 @@ export async function tick(db: Db, now = new Date()): Promise<{ outcome: TickOut
   };
   if (a.globalPause) return done("paused");
   if (a.suggestionsEnabled) await ruleSuggestions(db, 2);
-  if (!a.backgroundEnabled) return done("disabled");
+  if (!a.backgroundEnabled && !a.primeGovernance) return done("disabled");
   if (backgroundRunning()) return done("busy");
 
   const today = await db
     .select({ id: councilSessions.id, startedAt: councilSessions.startedAt })
     .from(councilSessions)
-    .where(and(eq(councilSessions.origin, "background"), gte(councilSessions.startedAt, startOfUtcDay(now))))
+    .where(and(inArray(councilSessions.origin, ["background", "governance"]), gte(councilSessions.startedAt, startOfUtcDay(now))))
     .orderBy(desc(councilSessions.startedAt));
   if (today.length >= a.maxSessionsPerDay) return done("daily-cap");
   // A $0 budget still allows free (local/demo) sessions; the budget guard refuses priced calls.
   if (a.backgroundDailyBudgetUsd > 0 && (await dailySpend(db, "background")) >= a.backgroundDailyBudgetUsd) return done("budget");
+
+  // Prime governance: the Primes take up the oldest world decision nobody has deliberated yet.
+  if (a.primeGovernance) {
+    const world = (await getWorld(db)).state as WorldState;
+    const pending = world.projects.find((p) => p.status === "awaiting_council" && !p.sessionId);
+    if (pending) {
+      const sessionId = await requestCouncil(db, pending.id, { automated: true });
+      return done("governance-started", sessionId);
+    }
+  }
+  if (!a.backgroundEnabled) return done("nothing-scheduled");
   const [last] = await db
     .select({ startedAt: councilSessions.startedAt })
     .from(councilSessions)

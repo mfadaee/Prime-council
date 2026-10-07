@@ -76,9 +76,10 @@ export function MembersPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="font-display text-2xl font-bold">Members & providers</h1>
+        <h1 className="font-display text-2xl font-bold">Primes & models</h1>
         <p className="max-w-3xl text-sm text-muted">
-          A <b>provider</b> serves models; a <b>model</b> is the underlying LLM; a <b>member</b> is a persistent persona with a role and a chosen model. API keys stay in your server environment
+          Each <b>Prime</b> is a persistent council seat with a role, a persona and one AI model. Give each Prime a different model family where you can — the council is meant to bring
+          different intelligences together. A <b>provider</b> serves models; a <b>model</b> is the underlying LLM. API keys stay in your server environment
           (<code>.env.local</code>) — this page only references variable names and never displays key values.
         </p>
         {msg && (
@@ -102,7 +103,7 @@ export function MembersPage() {
 
       <section aria-labelledby="mem-title" className="space-y-3">
         <h2 id="mem-title" className="font-display text-lg font-bold">
-          Council members
+          Primes
         </h2>
         <div className="grid gap-3 lg:grid-cols-2">
           {members.map((m) => (
@@ -357,7 +358,7 @@ function AddMember({ providers, onRun }: { providers: Provider[]; onRun: (fn: ()
   if (!open)
     return (
       <button className="btn" onClick={() => setOpen(true)}>
-        + Add member
+        + Add a Prime
       </button>
     );
   return (

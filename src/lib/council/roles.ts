@@ -15,7 +15,7 @@ export const ROLES: Record<CouncilRole, RoleInfo> = {
     title: "Chair",
     summary: "Coordinates deliberation",
     guidance:
-      "You coordinate. Interpret the Prime's request precisely: what is actually being asked, explicit and implied constraints, and what a good answer must contain. Stay neutral on the answer itself.",
+      "You coordinate. Interpret the Founder's request precisely: what is actually being asked, explicit and implied constraints, and what a good answer must contain. Stay neutral on the answer itself.",
     contributes: false,
   },
   analyst: {

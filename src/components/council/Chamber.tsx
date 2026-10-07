@@ -98,7 +98,7 @@ export function Chamber(props: Props) {
           </defs>
           <path d="M 9 38 A 41 46 0 0 0 91 38" fill="none" stroke="rgba(148,163,255,0.22)" strokeWidth="1" vectorEffect="non-scaling-stroke" strokeDasharray="2 6" />
           <path d="M 4 38 A 46 52 0 0 0 96 38" fill="none" stroke="rgba(148,163,255,0.1)" strokeWidth="1" vectorEffect="non-scaling-stroke" />
-          {/* Prime's line of sight to the dais */}
+          {/* Founder's line of sight to the dais */}
           <line x1={PRIME.x} y1={PRIME.y + 6} x2={DAIS.x} y2={DAIS.y - 8} stroke="rgba(255,211,110,0.35)" strokeWidth="1" vectorEffect="non-scaling-stroke" strokeDasharray="3 5" />
           <AnimatePresence>
             {links.map((l) => {
@@ -143,7 +143,7 @@ export function Chamber(props: Props) {
           <SpeechPanel speech={props.speech} members={props.members} reduce={Boolean(reduce)} />
         </div>
 
-        {/* Prime seat */}
+        {/* Founder seat */}
         <div className="absolute -translate-x-1/2 -translate-y-1/2" style={{ left: `${PRIME.x}%`, top: `${PRIME.y}%` }}>
           <div className="flex flex-col items-center">
             <div className="relative grid h-12 w-12 place-items-center rounded-full border-2 border-prime bg-[radial-gradient(circle_at_35%_30%,#fff2c4,#ffd36e_45%,#5a3d00)] shadow-[0_0_28px_rgba(255,211,110,0.55)] sm:h-16 sm:w-16">
@@ -151,7 +151,7 @@ export function Chamber(props: Props) {
                 ♛
               </span>
             </div>
-            <span className="mt-1 rounded-full bg-prime/15 px-2 py-0.5 font-display text-[10px] font-bold uppercase tracking-[0.2em] text-prime sm:text-xs">The Prime</span>
+            <span className="mt-1 rounded-full bg-prime/15 px-2 py-0.5 font-display text-[10px] font-bold uppercase tracking-[0.2em] text-prime sm:text-xs">The Founder</span>
           </div>
         </div>
 
@@ -271,7 +271,7 @@ function SpeechPanel({ speech, members, reduce }: { speech: Speech | null; membe
           </motion.div>
         ) : (
           <motion.div key="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="rounded-2xl border border-dashed border-line p-3 text-center text-xs text-faint">
-            The floor is open. Contributions appear here as members publish them.
+            The floor is open. Contributions appear here as the Primes publish them.
           </motion.div>
         )}
       </AnimatePresence>

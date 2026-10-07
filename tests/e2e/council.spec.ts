@@ -44,6 +44,12 @@ test.describe("council chamber (demo mode)", () => {
     // Expandable published details.
     await cards.first().getByText("Published details").click();
     await expect(cards.first().getByText("Success criteria")).toBeVisible();
+
+    // The decision appears in the Founder's Chronicle without the conversation.
+    await page.goto("/");
+    const chronicle = page.locator("aside[aria-labelledby='chronicle-title']");
+    await expect(chronicle.getByText("Should a small library open on Sundays?").first()).toBeVisible();
+    await expect(chronicle.getByText("You asked").first()).toBeVisible();
   });
 
   test("replays a finished session on the timeline", async ({ page, request }) => {
@@ -63,12 +69,12 @@ test.describe("council chamber (demo mode)", () => {
     await expect(page.getByText(/Event (\d+) of \1$/)).toBeVisible();
   });
 
-  test("the Prime can stop deliberation", async ({ page }) => {
+  test("the Founder can stop deliberation", async ({ page }) => {
     await ask(page, "Plan a city-wide recycling programme");
     await expect(page.getByText("Live", { exact: true })).toBeVisible();
     await page.getByRole("button", { name: "■ Stop" }).click();
-    await expect(page.getByRole("log").getByText("Session stopped: Stopped by the Prime")).toBeVisible({ timeout: 15_000 });
-    await expect(page.getByText("The Prime stopped deliberation")).toBeVisible();
+    await expect(page.getByRole("log").getByText("Session stopped: Stopped by the Founder")).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByText("The Founder stopped deliberation")).toBeVisible();
     await expect(page.locator("section[aria-labelledby='final-title']")).toContainText("No final answer");
   });
 
@@ -103,7 +109,7 @@ test.describe("council chamber (demo mode)", () => {
     await dialog.getByRole("combobox").selectOption("lumen");
     await dialog.getByPlaceholder("Your message").fill("Which claim most needs a source?");
     await dialog.getByRole("button", { name: "Send" }).click();
-    await expect(page.locator("[role=log]")).toContainText('The Prime to Lumen: "Which claim most needs a source?"');
+    await expect(page.locator("[role=log]")).toContainText('The Founder to Lumen: "Which claim most needs a source?"');
     await expect(page.locator("[role=log] article").last()).toContainText("Direct reply", { timeout: 15_000 });
   });
 

@@ -20,7 +20,7 @@ function hash(s: string): number {
 
 const ANGLE: Record<string, string> = {
   chair: "frame the question and keep deliberation on track",
-  analyst: "develop the main answer, structured around the Prime's success criteria",
+  analyst: "develop the main answer, structured around the Founder's success criteria",
   skeptic: "test the weakest assumptions and ask what evidence would change the conclusion",
   researcher: "identify which claims need sources and check them (research tools are not enabled in demo mode)",
   builder: "assess what it would take to act on the answer: steps, effort, risks",
@@ -57,7 +57,7 @@ export function demoOutput(req: GenerateRequest): unknown {
   switch (h.phase) {
     case "interpret":
       return {
-        restatement: `Simulated interpretation of the Prime's request: "${q}"`,
+        restatement: `Simulated interpretation of the Founder's request: "${q}"`,
         constraints: [
           "Demo mode: no model was called, so this session makes no factual claims",
           "Answer the actual request directly and keep it concise",

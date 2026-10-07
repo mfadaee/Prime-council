@@ -3,7 +3,7 @@ const MAP: Record<string, { label: string; cls: string; glyph: string; hint: str
   configured: { label: "Configured · not checked", cls: "border-refine/60 text-refine", glyph: "○", hint: "Credentials or URL present; run a check to confirm" },
   unavailable: { label: "Unavailable", cls: "border-danger/60 text-danger", glyph: "×", hint: "The last live check failed" },
   not_configured: { label: "Not configured", cls: "border-line-strong text-faint", glyph: "–", hint: "Missing API key or base URL" },
-  disabled: { label: "Disabled", cls: "border-line-strong text-faint", glyph: "⏸", hint: "Turned off by the Prime" },
+  disabled: { label: "Disabled", cls: "border-line-strong text-faint", glyph: "⏸", hint: "Turned off by the Founder" },
   demo: { label: "Demo · simulated", cls: "sim-badge", glyph: "◇", hint: "No model is called" },
 };
 

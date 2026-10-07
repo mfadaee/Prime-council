@@ -11,6 +11,7 @@ interface Autonomy {
   maxSessionsPerDay: number;
   backgroundDailyBudgetUsd: number;
   globalPause: boolean;
+  primeGovernance: boolean;
 }
 type Price = { inputPerM: number; outputPerM: number };
 interface SettingsData {
@@ -19,6 +20,8 @@ interface SettingsData {
   autonomy: Autonomy;
   pricing: Record<string, Price>;
   builtinPrices: Record<string, Price>;
+  charter: string;
+  defaultCharter: string;
 }
 
 const LIMIT_FIELDS: { key: keyof Limits; label: string; help: string; scale?: number; unit?: string; step?: number }[] = [
@@ -42,6 +45,7 @@ export function SettingsPage() {
   const [autonomy, setAutonomy] = useState<Autonomy | null>(null);
   const [pricing, setPricing] = useState<[string, Price][]>([]);
   const [spend, setSpend] = useState<{ today: number; bg: number } | null>(null);
+  const [charter, setCharter] = useState("");
   const [msg, setMsg] = useState<string | null>(null);
 
   const apply = ([d, s]: [SettingsData, { spendTodayUsd: number; backgroundSpendTodayUsd: number }]) => {
@@ -49,6 +53,7 @@ export function SettingsPage() {
     setLimits(d.limits);
     setAutonomy(d.autonomy);
     setPricing(Object.entries(d.pricing));
+    setCharter(d.charter);
     setSpend({ today: s.spendTodayUsd, bg: s.backgroundSpendTodayUsd });
   };
   const load = () => fetchSettings().then(apply);
@@ -82,6 +87,30 @@ export function SettingsPage() {
           </p>
         )}
       </div>
+
+      <section className="panel p-4" aria-labelledby="charter-title">
+        <h2 id="charter-title" className="font-display text-lg font-bold text-prime">
+          The Primes&apos; charter
+        </h2>
+        <p className="mt-1 text-xs text-muted">The standing mission every Prime receives as trusted context from you, the Founder. Limits and permissions are still enforced in code, not by this text.</p>
+        <form
+          className="mt-3 space-y-2"
+          onSubmit={(e) => {
+            e.preventDefault();
+            save({ charter }, "Charter saved — it applies to new sessions");
+          }}
+        >
+          <textarea className="field min-h-40 text-sm leading-relaxed" value={charter} onChange={(e) => setCharter(e.target.value)} maxLength={4000} aria-label="Charter" />
+          <div className="flex gap-2">
+            <button className="btn btn-primary btn-sm" disabled={charter.trim().length < 20}>
+              Save charter
+            </button>
+            <button type="button" className="btn btn-sm" onClick={() => setCharter(data.defaultCharter)}>
+              Restore default
+            </button>
+          </div>
+        </form>
+      </section>
 
       <section className="panel p-4" aria-labelledby="limits-title">
         <div className="flex flex-wrap items-baseline gap-3">
@@ -194,7 +223,7 @@ export function SettingsPage() {
           <label className="flex items-start gap-2 rounded-xl border border-warn/40 bg-warn/5 p-3 text-sm sm:col-span-2">
             <input type="checkbox" className="mt-1" checked={autonomy.globalPause} onChange={(e) => setAutonomy({ ...autonomy, globalPause: e.target.checked })} />
             <span>
-              <b>Global pause</b> — halt background sessions and world auto-run. Prime-initiated sessions are unaffected.
+              <b>Global pause</b> — halt background sessions and world auto-run. Founder-initiated sessions are unaffected.
             </span>
           </label>
           <label className="flex items-start gap-2 text-sm">
@@ -209,6 +238,16 @@ export function SettingsPage() {
             <span>
               <b>Scheduled background sessions</b>
               <span className="block text-xs text-muted">Deliberate on the top accepted suggestion on a schedule while the app is running.</span>
+            </span>
+          </label>
+          <label className="flex items-start gap-2 text-sm sm:col-span-2">
+            <input type="checkbox" className="mt-1" checked={autonomy.primeGovernance} onChange={(e) => setAutonomy({ ...autonomy, primeGovernance: e.target.checked })} />
+            <span>
+              <b>Prime governance of the world</b>
+              <span className="block text-xs text-muted">
+                The Primes deliberate on each world decision awaiting review and apply clear, non-simulated decisions themselves. You see every decision and outcome in the Chronicle and can still
+                decide any item first. Uses the background budget and daily session cap.
+              </span>
             </span>
           </label>
           <label className="text-xs text-muted">

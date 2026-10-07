@@ -97,8 +97,8 @@ export async function councilSuggestions(db: Db) {
   const interests = await db.select().from(memoryItems).where(and(eq(memoryItems.kind, "interest"), eq(memoryItems.enabled, true))).limit(10);
   const recent = await db.select({ id: councilSessions.id, q: councilSessions.question }).from(councilSessions).orderBy(desc(councilSessions.startedAt)).limit(8);
   if (!interests.length && !recent.length) return { created: [], error: "Add an interest in Memory or ask a question first — suggestions are based on those." };
-  const prompt = `Propose up to ${room} discussion topics the Prime would likely value, based only on the material below. Each needs a one-sentence reason that names the interest or earlier question it builds on. Do not repeat earlier questions.
-Interests the Prime approved:
+  const prompt = `Propose up to ${room} discussion topics the Founder would likely value, based only on the material below. Each needs a one-sentence reason that names the interest or earlier question it builds on. Do not repeat earlier questions.
+Interests the Founder approved:
 ${untrusted("prime-memory", interests.map((i) => `- ${i.content}`).join("\n") || "none")}
 Recent questions:
 ${untrusted("history", recent.map((r) => `- ${r.q}`).join("\n") || "none")}

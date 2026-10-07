@@ -1,6 +1,6 @@
 # Provider integrations
 
-Simulated Life keeps three things separate:
+Prime Council keeps three things separate:
 
 | Concept | What it is | Where it lives |
 |---|---|---|
