@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { body, json, route } from "@/lib/api";
 import { audit } from "@/lib/council/service";
+import { stopBackgroundRuns } from "@/lib/autonomy/scheduler";
 import { BUILTIN_PRICES } from "@/lib/providers/pricing";
 import {
   autonomySchema,
@@ -38,7 +39,10 @@ export const PUT = route(async (req, _ctx, db) => {
     if (input.limits.hardMaxRounds < input.limits.maxRounds) input.limits.hardMaxRounds = input.limits.maxRounds;
     out.limits = await setLimits(db, input.limits);
   }
-  if (input.autonomy) out.autonomy = await setAutonomy(db, input.autonomy);
+  if (input.autonomy) {
+    out.autonomy = await setAutonomy(db, input.autonomy);
+    if (input.autonomy.globalPause || !input.autonomy.backgroundEnabled) out.stoppedBackgroundSessions = stopBackgroundRuns("Global pause");
+  }
   if (input.pricing) out.pricing = await setPricing(db, input.pricing);
   await audit(db, "prime", "settings.update", null, input);
   return json(out);

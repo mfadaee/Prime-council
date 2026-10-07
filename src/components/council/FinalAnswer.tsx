@@ -27,6 +27,7 @@ export function FinalAnswerPanel({
   simulated,
   status,
   onOverride,
+  onRemember,
 }: {
   final: FinalAnswer | null;
   initial: Contribution | null;
@@ -35,6 +36,7 @@ export function FinalAnswerPanel({
   simulated: boolean;
   status: string;
   onOverride?: () => void;
+  onRemember?: (kind: "decision" | "interest") => void;
 }) {
   const [compare, setCompare] = useState(false);
   if (!final) {
@@ -132,6 +134,17 @@ export function FinalAnswerPanel({
             )}
           </div>
         </div>
+        {onRemember && (
+          <div className="mt-4 flex flex-wrap items-center gap-2 text-xs text-muted">
+            Save to memory:
+            <button type="button" className="btn btn-sm" onClick={() => onRemember("decision")}>
+              Remember this {override ? "decision" : "answer"}
+            </button>
+            <button type="button" className="btn btn-sm" onClick={() => onRemember("interest")}>
+              Mark topic as an interest
+            </button>
+          </div>
+        )}
         {final.deliberationEffect && (
           <div className="mt-4 rounded-xl bg-white/[0.04] p-3 text-sm">
             <span className="font-semibold text-reply">How deliberation changed the answer: </span>

@@ -150,6 +150,9 @@ export class CouncilRun {
   get running(): boolean {
     return this.status === "running";
   }
+  get scope(): "council" | "background" {
+    return this.deps.scope ?? "council";
+  }
   done: Promise<SessionStatus> = Promise.resolve("running");
 
   constructor(opts: {

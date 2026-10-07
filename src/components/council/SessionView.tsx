@@ -278,6 +278,20 @@ export function SessionView({ sessionId }: { sessionId: string }) {
             simulated={full.simulated}
             status={view.status}
             onOverride={running ? undefined : () => (setText(""), setDialog("override"))}
+            onRemember={
+              running || full.simulated
+                ? undefined
+                : async (kind) => {
+                    const content =
+                      kind === "interest" ? full.question : `Q: ${full.question.slice(0, 200)} — ${full.override ? `Prime decided: ${full.override.decision}` : `Council answered: ${full.final?.answer ?? ""}`}`;
+                    try {
+                      await api("/api/memory", { body: { kind, content: content.slice(0, 1000), source: "session", sourceRef: sessionId } });
+                      setNotice(kind === "interest" ? "Saved as an interest (see Memory)" : "Saved to memory (see Memory)");
+                    } catch (e) {
+                      setNotice(e instanceof Error ? e.message : String(e));
+                    }
+                  }
+            }
           />
         </div>
 
