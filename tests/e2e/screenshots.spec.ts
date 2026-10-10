@@ -12,10 +12,12 @@ import path from "node:path";
 const OUT = path.join(__dirname, "..", "..", "test-results", "readme-media");
 const enabled = process.env.CAPTURE_SCREENSHOTS === "1";
 
+// Video options force a new worker, so Playwright only accepts them at file level.
+// Recording is off unless capturing, so normal e2e runs are unchanged.
+test.use({ viewport: { width: 1280, height: 800 }, video: enabled ? { mode: "on", size: { width: 1280, height: 800 } } : "off" });
+
 test.describe("README media (demo mode)", () => {
   test.skip(!enabled, "set CAPTURE_SCREENSHOTS=1 to capture README media");
-  test.use({ viewport: { width: 1280, height: 800 }, video: { mode: "on", size: { width: 1280, height: 800 } } });
-
   test("council session from question to answer", async ({ page }) => {
     await page.goto("/");
     await expect(page.getByText("Demo mode", { exact: true })).toBeVisible();
