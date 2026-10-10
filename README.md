@@ -150,6 +150,7 @@ More detail in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md). Providers are cover
 - [docs/PROVIDERS.md](docs/PROVIDERS.md) — provider integration
 - [docs/DAILY_IMPROVEMENT.md](docs/DAILY_IMPROVEMENT.md) — the daily coding workflow. **Inactive until set up.**
 - [CONTRIBUTING.md](CONTRIBUTING.md) — contribution rules
+- [SECURITY.md](SECURITY.md) — how to report a vulnerability privately
 
 ## Remote access
 
