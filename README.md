@@ -1,5 +1,7 @@
 # Prime Council
 
+[![CI](https://github.com/mfadaee/Prime-council/actions/workflows/ci.yml/badge.svg)](https://github.com/mfadaee/Prime-council/actions/workflows/ci.yml)
+
 **A prime council that builds intelligence from scratch.**
 
 You are **the Founder**. The council is made of **Primes**, one agent for each AI model you connect: Claude, GPT, Gemini, local models and others. Under a charter you set, the Primes:
@@ -151,6 +153,7 @@ More detail in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md). Providers are cover
 - [docs/DAILY_IMPROVEMENT.md](docs/DAILY_IMPROVEMENT.md) — the daily coding workflow. **Inactive until set up.**
 - [CONTRIBUTING.md](CONTRIBUTING.md) — contribution rules
 - [SECURITY.md](SECURITY.md) — how to report a vulnerability privately
+- [CHANGELOG.md](CHANGELOG.md) — what changed, by milestone
 
 ## Remote access
 
