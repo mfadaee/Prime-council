@@ -99,6 +99,33 @@ With no provider configured, every seat uses the built-in **demo provider**:
 
 **Improvements** (`/improvements`): the history of changes, with purpose, validation and remaining issues, plus the status of the daily improvement job.
 
+## How it compares
+
+Several good open-source projects put more than one model, or many agents, to work together. Prime Council takes ideas from them and combines them in one local app. Pick the one that fits what you want to do.
+
+| Project | What it is | How Prime Council differs |
+|---|---|---|
+| [karpathy/llm-council](https://github.com/karpathy/llm-council) | A small web app: several models answer through OpenRouter, review and rank each other's answers anonymously, then a "chairman" model writes the final answer. Its author calls it a weekend hack ([write-up](https://www.analyticsvidhya.com/blog/2025/12/llm-council-by-andrej-karpathy/)). | Same council idea, plus: direct provider adapters (Anthropic, OpenAI, Gemini, Ollama, any OpenAI-compatible server), a keyless demo mode, controls while the council deliberates (stop, challenge, address one member, override), replay, spending limits enforced in code, and persistent memory. |
+| [Mixture-of-Agents](https://www.together.ai/blog/together-moa) (Together AI) | A research method and reference code: layers of "proposer" models whose answers an "aggregator" model combines into one. | MoA is a technique to raise answer quality. Prime Council is an application you watch and steer, with critique and resolve rounds you can see. |
+| [a16z-infra/ai-town](https://github.com/a16z-infra/ai-town) | An MIT-licensed starter kit for a virtual town where AI characters live and chat, inspired by the *Generative Agents* paper. Runs on Convex, with Ollama by default. | Prime Council's world is a deterministic economy that you can snapshot and replay. Its projects go to a council of real models for decisions, rather than being a chat sandbox. |
+| Agent frameworks (AutoGen, CrewAI, LangGraph…) | Libraries for building your own multi-agent pipelines in code. | Prime Council is a finished app, not a framework. You configure it in the UI; you don't write orchestration code. |
+
+The comparison reflects each project's public description at the time of writing. Corrections are welcome: open an issue or PR.
+
+## FAQ
+
+**Do I need API keys to try it?** No. With no keys, every seat uses the built-in demo provider. The full pipeline runs, and its output is labelled **Simulated**. Add keys later in `.env.local`.
+
+**Which models does it support?** Anthropic, OpenAI and Google Gemini directly; local models through Ollama; and anything that speaks the OpenAI `/v1/chat/completions` API (vLLM, LM Studio, llama.cpp, OpenRouter…). See [docs/PROVIDERS.md](docs/PROVIDERS.md).
+
+**Can it run up a big bill?** Before each model call, the app reserves the call's worst-case estimated cost. It refuses the call if that would pass the per-session or daily limit, which also covers calls running in parallel. By default it refuses models that have no price in Settings. Costs are estimates, so this limits how much new work starts; it is not a hard billing cap. Set a spending limit with your provider as well.
+
+**Does it need a database server?** No. It uses embedded PostgreSQL (PGlite) by default. A real PostgreSQL server is optional.
+
+**Can I expose it on a network?** It is local-only by default. See [Remote access](#remote-access): set `SIMLIFE_ACCESS_TOKEN` and put it behind HTTPS.
+
+**Are the agents people?** No. Primes are AI models. The world's inhabitants are deterministic simulations.
+
 ## Architecture (short)
 
 ```
