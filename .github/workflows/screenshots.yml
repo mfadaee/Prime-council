@@ -39,13 +39,17 @@ jobs:
       - name: Convert the session recording to a GIF
         run: |
           sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
-          video="$(find test-results -path '*council-session*' -name '*.webm' | head -n 1)"
-          test -n "$video"
+          find test-results -type f | sort
+          # The council session is the longest recording, so take the largest video.
+          video="$(find test-results -name '*.webm' -printf '%s %p\n' | sort -nr | head -n 1 | cut -d' ' -f2-)"
+          test -n "$video" || { echo "no video recorded"; exit 1; }
+          echo "using $video"
           ffmpeg -loglevel error -y -i "$video" \
             -vf "fps=8,scale=960:-1:flags=lanczos,split[a][b];[a]palettegen=max_colors=128[p];[b][p]paletteuse=dither=bayer" \
             test-results/readme-media/council.gif
           ls -la test-results/readme-media
       - uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: readme-media
           path: test-results/readme-media
