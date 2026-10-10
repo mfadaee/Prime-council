@@ -1,0 +1,52 @@
+name: README media
+
+# Captures screenshots and a short GIF of the real app in demo mode (no API keys,
+# no model calls) and uploads them as a build artifact. Nothing is committed or
+# published: the owner reviews the artifact and adds the files to docs/media/.
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - tests/e2e/screenshots.spec.ts
+      - .github/workflows/screenshots.yml
+
+concurrency:
+  group: readme-media-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  capture:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Capture (demo mode)
+        run: npx playwright test tests/e2e/screenshots.spec.ts --project=desktop
+        env:
+          CAPTURE_SCREENSHOTS: "1"
+          SIMLIFE_DEMO: "1"
+      - name: Convert the session recording to a GIF
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+          video="$(find test-results -path '*council-session*' -name '*.webm' | head -n 1)"
+          test -n "$video"
+          ffmpeg -loglevel error -y -i "$video" \
+            -vf "fps=8,scale=960:-1:flags=lanczos,split[a][b];[a]palettegen=max_colors=128[p];[b][p]paletteuse=dither=bayer" \
+            test-results/readme-media/council.gif
+          ls -la test-results/readme-media
+      - uses: actions/upload-artifact@v4
+        with:
+          name: readme-media
+          path: test-results/readme-media
+          retention-days: 14
