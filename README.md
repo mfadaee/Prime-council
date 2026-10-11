@@ -4,6 +4,8 @@
 
 **A prime council that builds intelligence from scratch.**
 
+A local-first web app for **multi-model LLM deliberation**: Claude, GPT, Gemini and local (Ollama) models answer, critique each other and resolve as a council while you watch and steer. Runs in a keyless demo mode out of the box.
+
 You are **the Founder**. The council is made of **Primes**, one agent for each AI model you connect: Claude, GPT, Gemini, local models and others. Under a charter you set, the Primes:
 - deliberate together;
 - decide;
@@ -152,6 +154,7 @@ More detail in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md). Providers are cover
 - [docs/PROVIDERS.md](docs/PROVIDERS.md) — provider integration
 - [docs/DAILY_IMPROVEMENT.md](docs/DAILY_IMPROVEMENT.md) — the daily coding workflow. **Inactive until set up.**
 - [CONTRIBUTING.md](CONTRIBUTING.md) — contribution rules
+- [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) — how we treat each other
 - [SECURITY.md](SECURITY.md) — how to report a vulnerability privately
 - [CHANGELOG.md](CHANGELOG.md) — what changed, by milestone
 
