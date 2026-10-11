@@ -16,7 +16,16 @@ See [docs/VISION.md](docs/VISION.md) for the full vision.
 
 ## Quick start
 
-Requires Node.js ≥ 20.9.
+**With Docker** (nothing else to install):
+
+```bash
+git clone https://github.com/mfadaee/prime-council && cd prime-council
+docker compose up --build    # http://localhost:3000 — demo mode, no keys needed
+```
+
+Data is kept in the `prime-data` volume. To use real models, put keys in `.env.local` (below) and run the same command. Inside the container, a model server on your machine is `http://host.docker.internal:<port>`, not `localhost`.
+
+**With Node.js** ≥ 20.9:
 
 ```bash
 npm install
