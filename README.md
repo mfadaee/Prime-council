@@ -136,6 +136,20 @@ The core flow:
 
 More detail in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md). Providers are covered in [docs/PROVIDERS.md](docs/PROVIDERS.md).
 
+## Tech stack
+
+| Layer | What it uses |
+|---|---|
+| App | [Next.js](https://nextjs.org) 16 (App Router, route handlers, Server-Sent Events), React 19, TypeScript |
+| UI | Tailwind CSS 4, [Motion](https://motion.dev) for chamber and world-map animation |
+| Data | PostgreSQL via [Drizzle ORM](https://orm.drizzle.team); embedded [PGlite](https://pglite.dev) by default, `pg` for a real server |
+| Models | Anthropic SDK for Claude; plain HTTP adapters for OpenAI (Responses API), Gemini, OpenAI-compatible servers and Ollama; a labelled demo provider |
+| Validation | [Zod](https://zod.dev) schemas for model output, API input and settings |
+| Tests | Vitest (unit, optional real-PostgreSQL integration), Playwright (desktop + mobile e2e) |
+| CI | GitHub Actions: lint, typecheck, unit tests, build, e2e |
+
+Requires Node.js ≥ 20.9. Version `0.1.0`, pre-release: the milestones in [docs/ROADMAP.md](docs/ROADMAP.md) are marked Done, Partial or Planned.
+
 ## Security model
 
 - **Local-first.** Servers bind to `127.0.0.1`, and the proxy refuses requests addressed to any non-loopback host unless `SIMLIFE_ACCESS_TOKEN` is set. This also defeats DNS rebinding.
