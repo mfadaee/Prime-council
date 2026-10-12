@@ -25,6 +25,13 @@ docker compose up --build    # http://localhost:3000 — demo mode, no keys need
 
 Data is kept in the `prime-data` volume. To use real models, put keys in `.env.local` (below) and run the same command. Inside the container, a model server on your machine is `http://host.docker.internal:<port>`, not `localhost`.
 
+**In a dev container** (VS Code or GitHub Codespaces):
+
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/mfadaee/prime-council)
+
+VS Code: open the folder and choose **Reopen in Container**. The container installs dependencies, starts `npm run dev:demo` and forwards port 3000 (demo mode, no keys).
+In Codespaces the forwarded port is private to your GitHub account. If the page says *"Prime Council is local-only"*, the forwarded request did not arrive as `localhost`: add `SIMLIFE_ACCESS_TOKEN=<long random value>` (`openssl rand -hex 32`) to `.env.local` in the codespace, restart `npm run dev:demo`, and sign in at `/login`. The access check is never loosened for Codespaces.
+
 **With Node.js** ≥ 20.9:
 
 ```bash
