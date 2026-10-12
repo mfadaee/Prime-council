@@ -35,8 +35,8 @@ jobs:
         with:
           node-version: 22
 
-      - name: Build and start the dev container (runs postCreateCommand)
-        run: npx --yes @devcontainers/cli@0 up --workspace-folder .
+      - name: Build and start the dev container (postCreateCommand; postAttach is the long-running dev server, started below)
+        run: npx --yes @devcontainers/cli@0 up --workspace-folder . --skip-post-attach
 
       - name: Start the app and check it in demo mode
         run: |
