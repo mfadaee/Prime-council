@@ -150,6 +150,23 @@ More detail in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md). Providers are cover
 
 Requires Node.js ≥ 20.9. Version `0.1.0`, pre-release: the milestones in [docs/ROADMAP.md](docs/ROADMAP.md) are marked Done, Partial or Planned.
 
+## Roadmap
+
+| Milestone | Status |
+|---|---|
+| 1 · Council MVP: chamber, bounded pipeline, five provider adapters + demo, Prime controls, budgets, replay | Done |
+| 2 · Persistent intelligence: member configuration, inspectable memory, suggested and background sessions | Done |
+| 3 · Living society: deterministic world, fictional economy, projects, council docket | Done |
+| 4 · Continuous improvement: CI, daily improvement job, `/improvements` history | Done |
+| Prime Council direction: Founder / Primes / agents, charter, Chronicle, Prime governance | Done (first slice) |
+| Later: agents at scale, Prime-proposed world rules, research tools, multi-process event bus, token streaming | Planned |
+
+Details and known gaps are in [docs/ROADMAP.md](docs/ROADMAP.md); the next small items are in [docs/BACKLOG.md](docs/BACKLOG.md).
+
+## Contributing
+
+Contributions are welcome, from people and from coding agents alike. Read [CONTRIBUTING.md](CONTRIBUTING.md) for the workflow and the architecture rules (limits live in code, one reducer for the chamber, simulation is always labelled). Items marked **low/auto** in [docs/BACKLOG.md](docs/BACKLOG.md) are small and self-contained, a good place to start.
+
 ## Security model
 
 - **Local-first.** Servers bind to `127.0.0.1`, and the proxy refuses requests addressed to any non-loopback host unless `SIMLIFE_ACCESS_TOKEN` is set. This also defeats DNS rebinding.
