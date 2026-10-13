@@ -144,6 +144,41 @@ The comparison reflects each project's public description at the time of writing
 
 ## Architecture (short)
 
+How one council session runs (`src/lib/council/orchestrator.ts`):
+
+```mermaid
+flowchart LR
+  Q["Founder's question"] --> I["Interpret<br/>(Chair)"]
+  I --> A["Analyst"] & S["Skeptic"] & R["Researcher"] & B["Builder"]
+  subgraph IND["Independent contributions: in parallel, blind"]
+    A
+    S
+    R
+    B
+  end
+  A & S & R & B --> C["Critique"]
+  C --> RS["Resolve<br/>revise · defend · concede"]
+  RS -- "material challenge left<br/>and rounds remain" --> C
+  RS --> SY["Synthesize<br/>(Synthesizer)"]
+  SY --> F["Final answer<br/>+ preserved disagreement"]
+  P(["Founder: stop · another round ·<br/>challenge · address · exclude · override"]) -.-> C
+  G[["Budget guard: reserve worst-case cost<br/>before every model call"]] -.-> IND
+```
+
+How events reach the browser, live and on replay:
+
+```mermaid
+flowchart LR
+  UI["Browser"] -- "POST /api/sessions" --> RUN["CouncilRun<br/>(server process)"]
+  RUN -- "calls" --> PR["Provider adapters<br/>Anthropic · OpenAI · Gemini ·<br/>OpenAI-compatible · Ollama · demo"]
+  RUN -- "1 append" --> DB[("session_events<br/>Postgres / PGlite")]
+  RUN -- "2 publish" --> BUS["In-process bus"]
+  DB -- "replay from seq" --> SSE["GET /api/sessions/:id/stream<br/>(SSE, resumable)"]
+  BUS -- "follow live" --> SSE
+  SSE --> RED["reducer(events) → chamber state<br/>same reducer for live and replay"]
+  RED --> UI
+```
+
 ```
 src/
   app/                 Next.js App Router pages + route handlers (/api/*)
