@@ -1,0 +1,1802 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Prime Council Demo</title>
+<meta name="description" content="Interactive, fully simulated demo of Prime Council. Runs in your browser; no AI model is called.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap">
+<style>
+/* Prime Council "night council" identity (from src/app/globals.css). Single dark look, as in the app. */
+:root{
+  --bg:#070a1a; --bg-2:#0d1230; --panel:rgba(18,24,58,.72); --panel-solid:#121838;
+  --border:rgba(148,163,255,.16); --border-strong:rgba(148,163,255,.32);
+  --text:#eef0ff; --muted:#a7aed8; --faint:#8a92c4;
+  --prime:#ffd36e; --accent:#8b7bff; --challenge:#ff8a5b; --support:#4ade9a; --refine:#5cc8ff; --reply:#c4a1ff;
+  --danger:#ff6b7a; --warn:#ffc857;
+  --sans:"Inter",ui-sans-serif,system-ui,sans-serif;
+  --display:"Space Grotesk","Inter",ui-sans-serif,system-ui,sans-serif;
+  --mono:ui-monospace,SFMono-Regular,Menlo,monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;min-height:100dvh;color:var(--text);font:14px/1.5 var(--sans);
+  background:radial-gradient(1200px 600px at 15% -10%,rgba(139,123,255,.22),transparent 60%),radial-gradient(900px 500px at 100% 0%,rgba(92,200,255,.12),transparent 60%),radial-gradient(800px 600px at 50% 110%,rgba(255,143,203,.1),transparent 60%),var(--bg);
+  background-attachment:fixed}
+[hidden]{display:none!important}
+a{color:var(--refine)}
+button,input,textarea,select{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--prime);outline-offset:2px}
+.wrap{max-width:1240px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+
+/* header */
+header.site{position:sticky;top:0;z-index:30;background:rgba(7,10,26,.82);backdrop-filter:blur(10px);border-bottom:1px solid var(--border);padding-top:env(safe-area-inset-top,0px)}
+.bar{display:flex;align-items:center;gap:12px;height:56px}
+.logo{display:flex;align-items:center;gap:10px;font-family:var(--display);font-weight:700;font-size:17px;letter-spacing:-.01em;white-space:nowrap}
+.logo svg{width:28px;height:28px}
+nav.tabs{display:flex;gap:2px;margin-left:8px;overflow-x:auto;scrollbar-width:none}
+nav.tabs::-webkit-scrollbar{display:none}
+nav.tabs button{background:none;border:0;border-radius:8px;padding:6px 12px;color:var(--muted);font-weight:500;cursor:pointer;white-space:nowrap}
+nav.tabs button:hover{background:rgba(255,255,255,.05);color:var(--text)}
+nav.tabs button[aria-current="page"]{background:rgba(255,255,255,.1);color:var(--text)}
+.bar .spacer{flex:1}
+.repo{font-size:12px;color:var(--muted);white-space:nowrap;text-decoration:none;border:1px solid var(--border);padding:5px 10px;border-radius:999px}
+.repo:hover{color:var(--text);border-color:var(--border-strong)}
+.demo-band{border-top:1px solid var(--border);background:rgba(255,211,110,.07);font-size:12.5px;color:var(--muted)}
+.demo-band .wrap{display:flex;gap:10px;align-items:center;padding-block:7px;flex-wrap:wrap}
+.chip{display:inline-flex;align-items:center;gap:5px;border:1px solid var(--border-strong);border-radius:999px;padding:1px 8px;font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;white-space:nowrap}
+.sim-badge{color:var(--prime);border-color:rgba(255,211,110,.45);background:rgba(255,211,110,.08)}
+
+main{padding-block:20px 48px}
+h1,h2,h3{font-family:var(--display);letter-spacing:-.01em;margin:0;text-wrap:balance}
+h1{font-size:clamp(22px,3vw,30px)}
+h2{font-size:17px}
+h3{font-size:14px}
+.sub{color:var(--muted);margin:4px 0 0;max-width:70ch}
+.panel{background:var(--panel);border:1px solid var(--border);border-radius:16px;backdrop-filter:blur(6px)}
+.pad{padding:16px}
+.grid{display:grid;gap:16px}
+.cols{display:grid;gap:16px;grid-template-columns:minmax(0,1fr) 340px}
+@media (max-width:980px){.cols{grid-template-columns:minmax(0,1fr)}}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.muted{color:var(--muted)} .faint{color:var(--faint)} .small{font-size:12.5px}
+.label{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--faint);font-weight:600}
+.num{font-variant-numeric:tabular-nums}
+
+.btn{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--border-strong);background:rgba(255,255,255,.04);border-radius:10px;padding:7px 12px;font-weight:500;cursor:pointer;color:var(--text)}
+.btn:hover:not(:disabled){background:rgba(255,255,255,.09)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn.primary{background:var(--accent);border-color:transparent;color:#fff;font-weight:600}
+.btn.primary:hover:not(:disabled){background:#9a8bff}
+.btn.prime{background:rgba(255,211,110,.14);border-color:rgba(255,211,110,.5);color:var(--prime)}
+.btn.danger{border-color:rgba(255,107,122,.5);color:var(--danger)}
+.btn.sm{padding:4px 9px;font-size:12.5px;border-radius:8px}
+
+/* chamber */
+.chamber{position:relative;overflow:hidden;padding:8px}
+.chamber::before{content:"";position:absolute;inset:0;background:radial-gradient(ellipse at 50% 45%,rgba(139,123,255,.18),transparent 60%);pointer-events:none}
+.chamber svg{display:block;width:100%;height:auto;max-height:560px;position:relative}
+.chamber-head{position:absolute;left:14px;right:14px;top:12px;display:flex;justify-content:space-between;gap:8px;z-index:2;pointer-events:none;flex-wrap:wrap}
+.phase-pill{background:rgba(7,10,26,.7);border:1px solid var(--border-strong);border-radius:999px;padding:3px 10px;font-size:12px;color:var(--muted)}
+.phase-pill b{color:var(--text);font-weight:600}
+.seat{cursor:pointer}
+.seat:focus{outline:none}
+.seat:focus-visible .ring{stroke:var(--prime);stroke-width:.7}
+.flow{stroke-dasharray:1.6 1.2;animation:flow 1.1s linear infinite}
+@keyframes flow{to{stroke-dashoffset:-2.8}}
+.pulse{animation:pulse 1.4s ease-in-out infinite;transform-box:fill-box;transform-origin:center}
+@keyframes pulse{50%{opacity:.35}}
+.speech{position:absolute;left:50%;top:44%;transform:translate(-50%,-50%);width:min(380px,62%);background:rgba(13,18,48,.92);border:1px solid var(--border-strong);border-radius:12px;padding:8px 11px;font-size:12.5px;z-index:2;box-shadow:0 10px 30px rgba(0,0,0,.35)}
+.speech .who{font-weight:600;font-size:12px;margin-bottom:2px}
+@media (max-width:560px){.speech{top:auto;bottom:8px;transform:translateX(-50%);width:calc(100% - 16px)}}
+.legend{display:flex;flex-wrap:wrap;gap:10px;font-size:11.5px;color:var(--muted);padding:6px 6px 2px}
+.legend i{display:inline-block;width:14px;height:3px;border-radius:2px;vertical-align:middle;margin-right:4px}
+
+/* composer */
+textarea.ask{width:100%;min-height:76px;resize:vertical;background:rgba(7,10,26,.6);border:1px solid var(--border-strong);border-radius:12px;padding:10px 12px;line-height:1.45}
+textarea.ask:focus{outline:none;border-color:var(--accent)}
+.samples{display:flex;gap:6px;flex-wrap:wrap}
+.samples button{background:rgba(139,123,255,.1);border:1px solid rgba(139,123,255,.3);color:var(--text);border-radius:999px;padding:3px 10px;font-size:12px;cursor:pointer;text-align:left}
+.samples button:hover{background:rgba(139,123,255,.2)}
+input.text,select.text{background:rgba(7,10,26,.6);border:1px solid var(--border-strong);border-radius:9px;padding:6px 10px;min-width:0}
+.controls{display:flex;flex-wrap:wrap;gap:6px}
+
+/* stats */
+.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+@media (max-width:560px){.stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.stat{border:1px solid var(--border);border-radius:12px;padding:8px 10px;background:rgba(7,10,26,.35)}
+.stat .v{font-family:var(--display);font-size:18px;font-weight:600;font-variant-numeric:tabular-nums}
+
+/* transcript */
+.msgs{display:flex;flex-direction:column;gap:8px}
+.msg{border:1px solid var(--border);border-left:3px solid var(--c,var(--accent));border-radius:12px;padding:9px 12px;background:rgba(7,10,26,.35)}
+.msg .meta{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:12px;color:var(--muted)}
+.msg .meta b{color:var(--text);font-size:13px}
+.msg p{margin:5px 0 0}
+.msg details{margin-top:6px;font-size:12.5px}
+.msg summary{cursor:pointer;color:var(--refine)}
+.msg ul{margin:4px 0;padding-left:18px}
+.stance{font-weight:600}
+.compare{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media (max-width:720px){.compare{grid-template-columns:1fr}}
+.answer{border:1px solid var(--border);border-radius:12px;padding:10px 12px;background:rgba(7,10,26,.35)}
+.final{border-color:rgba(255,211,110,.45);background:rgba(255,211,110,.06)}
+.empty{border:1px dashed var(--border-strong);border-radius:12px;padding:16px;color:var(--muted);text-align:center}
+
+/* chronicle */
+.chron{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px;max-height:520px;overflow:auto}
+.chron li{display:grid;grid-template-columns:18px 1fr;gap:8px;padding:6px 4px;border-bottom:1px solid var(--border);font-size:12.5px}
+.chron li:last-child{border-bottom:0}
+.chron .g{font-size:13px;line-height:1.3;text-align:center}
+.chron time{display:block;color:var(--faint);font-size:11px}
+
+/* sessions */
+.slist{display:flex;flex-direction:column;gap:8px}
+.sitem{display:flex;gap:10px;align-items:center;justify-content:space-between;border:1px solid var(--border);border-radius:12px;padding:10px 12px;background:rgba(7,10,26,.35);flex-wrap:wrap}
+.sitem .q{flex:1;min-width:200px}
+input[type=range]{width:100%;accent-color:var(--accent)}
+
+/* world */
+.mapbox{padding:8px}
+.mapbox svg{display:block;width:100%;height:auto}
+.wstats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+@media (max-width:560px){.wstats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.proj{border:1px solid var(--border);border-radius:12px;padding:9px 11px;background:rgba(7,10,26,.35)}
+.proj .bar2{height:6px;border-radius:4px;background:rgba(255,255,255,.08);overflow:hidden;margin-top:6px}
+.proj .bar2 i{display:block;height:100%;background:var(--support)}
+.status{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em}
+.feed{list-style:none;margin:0;padding:0;max-height:330px;overflow:auto;font-size:12.5px}
+.feed li{padding:5px 2px;border-bottom:1px solid var(--border)}
+.feed li span{color:var(--faint);font-size:11px;margin-right:6px}
+.await{border:1px solid rgba(255,211,110,.5);background:rgba(255,211,110,.07);border-radius:12px;padding:10px 12px}
+
+/* primes */
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
+.card{border:1px solid var(--border);border-radius:14px;padding:12px;background:rgba(7,10,26,.35);display:flex;flex-direction:column;gap:8px}
+.av{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;font-family:var(--display);font-weight:700;color:#0a0d24;flex:none}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th,td{text-align:left;padding:7px 8px;border-bottom:1px solid var(--border)}
+th{color:var(--faint);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.06em}
+.tablebox{overflow-x:auto}
+.switch{position:relative;display:inline-flex;align-items:center;gap:8px;cursor:pointer;font-size:12.5px;color:var(--muted)}
+.switch input{appearance:none;width:34px;height:20px;border-radius:999px;background:rgba(255,255,255,.12);border:1px solid var(--border-strong);position:relative;cursor:pointer;margin:0}
+.switch input::after{content:"";position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:var(--muted);transition:transform .15s}
+.switch input:checked{background:rgba(74,222,154,.3)}
+.switch input:checked::after{transform:translateX(14px);background:var(--support)}
+
+/* drawer */
+.drawer{position:fixed;inset:auto 0 0 0;z-index:40;max-height:78dvh;overflow:auto;background:var(--panel-solid);border-top:1px solid var(--border-strong);border-radius:16px 16px 0 0;padding:16px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-bottom:calc(16px + env(safe-area-inset-bottom,0px));box-shadow:0 -20px 50px rgba(0,0,0,.5)}
+@media (min-width:760px){.drawer{inset:auto auto 20px 50%;transform:translateX(-50%);width:560px;border-radius:16px;border:1px solid var(--border-strong)}}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--panel-solid);border:1px solid var(--border-strong);border-radius:10px;padding:8px 14px;z-index:50;font-size:13px;box-shadow:0 10px 30px rgba(0,0,0,.4);max-width:calc(100% - 32px)}
+footer{border-top:1px solid var(--border);color:var(--faint);font-size:12px;padding-block:18px calc(18px + env(safe-area-inset-bottom,0px))}
+@media (prefers-reduced-motion:reduce){.flow,.pulse{animation:none}*{scroll-behavior:auto}}
+</style>
+</head>
+<body>
+<header class="site">
+  <div class="wrap bar">
+    <div class="logo" aria-label="Prime Council">
+      <svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="14" fill="none" stroke="#8b7bff" stroke-width="2"/><circle cx="16" cy="6.5" r="3" fill="#ffd36e"/><circle cx="7" cy="19" r="2.4" fill="#4cc3ff"/><circle cx="25" cy="19" r="2.4" fill="#ff7a6b"/><circle cx="11" cy="25.5" r="2.4" fill="#3ddc97"/><circle cx="21" cy="25.5" r="2.4" fill="#b79cff"/><circle cx="16" cy="16" r="2.2" fill="#ff8fcb"/></svg>
+      Prime Council
+    </div>
+    <nav class="tabs" aria-label="Main">
+      <button data-tab="council" aria-current="page">Council</button>
+      <button data-tab="sessions">Sessions</button>
+      <button data-tab="world">World</button>
+      <button data-tab="primes">Primes</button>
+    </nav>
+    <span class="spacer"></span>
+    <a class="repo" href="https://github.com/mfadaee/Prime-council" target="_blank" rel="noopener">View on GitHub</a>
+  </div>
+  <div class="demo-band"><div class="wrap">
+    <span class="chip sim-badge">Simulated demo</span>
+    <span>Runs entirely in your browser. Every Prime uses the built-in demo provider, so no AI model is called and the council gives no real answers. The world simulation is the app's real engine.</span>
+  </div></div>
+</header>
+
+<main class="wrap">
+
+<!-- ============================== COUNCIL ============================== -->
+<section id="tab-council" aria-labelledby="h-council">
+  <div class="row" style="justify-content:space-between;align-items:flex-end;margin-bottom:14px">
+    <div>
+      <h1 id="h-council">The council chamber</h1>
+      <p class="sub">You are the Founder. Ask the Primes a question and watch them deliberate: the Chair interprets it, four Primes answer independently, they critique each other, then the Synthesizer writes the final answer.</p>
+    </div>
+  </div>
+  <div class="cols">
+    <div class="grid">
+      <div class="panel chamber" id="chamber">
+        <div class="chamber-head">
+          <span class="phase-pill" id="phasePill">Waiting for the Founder</span>
+          <span class="chip sim-badge" title="Every member uses the demo provider. No model was called.">Simulated · demo provider</span>
+        </div>
+        <svg id="chamberSvg" viewBox="0 0 100 74" role="img" aria-label="Council chamber"></svg>
+        <div class="speech" id="speech" hidden></div>
+        <div class="legend" aria-label="Link colours">
+          <span><i style="background:var(--challenge)"></i>challenges</span>
+          <span><i style="background:var(--support)"></i>supports</span>
+          <span><i style="background:var(--refine)"></i>refines</span>
+          <span><i style="background:var(--reply)"></i>replies to</span>
+          <span><i style="background:var(--prime)"></i>Founder addresses</span>
+          <span class="faint">Tap a Prime to address or exclude it.</span>
+        </div>
+      </div>
+
+      <div class="panel pad grid" style="gap:10px">
+        <label class="label" for="askBox">Ask the council</label>
+        <textarea class="ask" id="askBox" placeholder="What should the Primes deliberate on?">Should our town invest in a shared tool library this year?</textarea>
+        <div class="samples" id="samples" aria-label="Sample questions"></div>
+        <div class="row" style="justify-content:space-between">
+          <span class="small faint">Demo mode: about 10 seconds per session. Answers are placeholders that show where real model output would appear.</span>
+          <button class="btn primary" id="askBtn">Convene the council</button>
+        </div>
+      </div>
+
+      <div class="panel pad grid" style="gap:10px" id="founderPanel">
+        <div class="row" style="justify-content:space-between"><h2>Founder controls</h2><span class="small faint" id="ctrlHint">Start a session to use these.</span></div>
+        <div class="controls">
+          <button class="btn danger" id="cStop" disabled>Stop</button>
+          <button class="btn" id="cRound" disabled>Request another round</button>
+          <button class="btn" id="cChallenge" disabled>Challenge a claim</button>
+          <button class="btn" id="cAddress" disabled>Address one Prime</button>
+          <button class="btn prime" id="cOverride" disabled>Override the decision</button>
+        </div>
+        <div class="row" id="challengeRow" hidden>
+          <input class="text" id="challengeText" style="flex:1" placeholder="Which claim should the Primes re-examine?" aria-label="Claim to challenge">
+          <button class="btn sm" id="challengeGo">Send challenge</button>
+        </div>
+      </div>
+
+      <div class="panel pad grid" style="gap:12px">
+        <div class="row" style="justify-content:space-between"><h2>Outcome</h2><span class="chip sim-badge" id="outcomeBadge" hidden>Simulated</span></div>
+        <div class="stats">
+          <div class="stat"><div class="label">Elapsed</div><div class="v" id="sElapsed">0.0 s</div></div>
+          <div class="stat"><div class="label">Model calls</div><div class="v" id="sCalls">0</div></div>
+          <div class="stat"><div class="label">Tokens (est.)</div><div class="v" id="sTokens">0</div></div>
+          <div class="stat"><div class="label">Cost (est.)</div><div class="v" id="sCost">$0.00</div></div>
+        </div>
+        <div id="outcome"><div class="empty">The final answer appears here, next to the initial answer, so you can see what deliberation changed.</div></div>
+      </div>
+
+      <div class="panel pad grid" style="gap:10px">
+        <div class="row" style="justify-content:space-between"><h2>Transcript</h2><span class="small faint">Published contributions only. Expand one to see its rationale, evidence and assumptions.</span></div>
+        <div class="msgs" id="transcript"><div class="empty">No session yet.</div></div>
+      </div>
+    </div>
+
+    <aside class="grid" style="align-content:start">
+      <div class="panel pad grid" style="gap:8px">
+        <div class="row" style="justify-content:space-between"><h2>Chronicle</h2><span class="small faint">Major decisions and milestones</span></div>
+        <ul class="chron" id="chronicle"></ul>
+      </div>
+      <div class="panel pad grid" style="gap:8px">
+        <h2>The charter</h2>
+        <p class="small muted" style="margin:0">The Primes' standing mission, given to every Prime as trusted context. In the app you edit it in Settings.</p>
+        <blockquote class="small" style="margin:0;border-left:3px solid var(--prime);padding:6px 10px;background:rgba(255,211,110,.06);border-radius:0 8px 8px 0">Govern the simulated world to find what is true and add value to human life. Prefer evidence over agreement, say what is uncertain, and never present simulation as fact.</blockquote>
+      </div>
+    </aside>
+  </div>
+</section>
+
+<!-- ============================== SESSIONS ============================== -->
+<section id="tab-sessions" hidden aria-labelledby="h-sessions">
+  <h1 id="h-sessions">Sessions</h1>
+  <p class="sub">Every session you run in this demo is kept in this browser. Open one to replay it on its timeline.</p>
+  <div class="grid" style="margin-top:16px">
+    <div class="slist" id="sessionList"></div>
+    <div class="panel pad grid" id="replay" hidden style="gap:12px">
+      <div class="row" style="justify-content:space-between"><h2 id="replayTitle">Replay</h2><button class="btn sm" id="replayClose">Close replay</button></div>
+      <div class="row">
+        <button class="btn sm" id="replayPlay">Play</button>
+        <input type="range" id="replaySlider" min="0" max="0" value="0" style="flex:1;min-width:160px" aria-label="Replay position">
+        <span class="small num muted" id="replayPos">0 / 0</span>
+      </div>
+      <div class="panel chamber"><div class="chamber-head"><span class="phase-pill" id="rPhase">—</span></div><svg id="replaySvg" viewBox="0 0 100 74" role="img" aria-label="Replay of the council chamber"></svg><div class="speech" id="rSpeech" hidden></div></div>
+      <div class="msgs" id="replayMsgs"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================== WORLD ============================== -->
+<section id="tab-world" hidden aria-labelledby="h-world">
+  <div class="row" style="justify-content:space-between;align-items:flex-end;margin-bottom:14px">
+    <div>
+      <h1 id="h-world" class="row" style="gap:10px">World: <span id="wName">Ember Hollow</span></h1>
+      <p class="sub">A fictional economy the Primes govern. This is the app's real deterministic engine, running in your browser: credits are never created or destroyed. Big projects need a council decision.</p>
+    </div>
+    <div class="controls">
+      <button class="btn primary" id="wRun">Run</button>
+      <button class="btn" id="wStep">Step one shift</button>
+      <select class="text" id="wSpeed" aria-label="Speed"><option value="900">Normal speed</option><option value="300">Fast</option><option value="80">Very fast</option></select>
+      <button class="btn danger" id="wReset">New world</button>
+    </div>
+  </div>
+  <div class="cols">
+    <div class="grid">
+      <div class="wstats" id="wStats"></div>
+      <div class="panel mapbox"><svg id="worldSvg" viewBox="0 0 100 64" role="img" aria-label="World map"></svg></div>
+      <div class="panel pad grid" style="gap:8px" id="inhPanel">
+        <div class="row" style="justify-content:space-between"><h2>Agents</h2><span class="small faint">Tap an agent on the map or in the list</span></div>
+        <div id="inhDetail"></div>
+        <div class="tablebox"><table id="inhTable"></table></div>
+      </div>
+    </div>
+    <aside class="grid" style="align-content:start">
+      <div id="awaitBox"></div>
+      <div class="panel pad grid" style="gap:8px"><h2>Projects</h2><div class="grid" style="gap:8px" id="wProjects"></div></div>
+      <div class="panel pad grid" style="gap:8px"><h2>Events</h2><ul class="feed" id="wFeed"></ul></div>
+    </aside>
+  </div>
+</section>
+
+<!-- ============================== PRIMES ============================== -->
+<section id="tab-primes" hidden aria-labelledby="h-primes">
+  <h1 id="h-primes">Primes</h1>
+  <p class="sub">One Prime per AI model where possible. In this demo every seat uses the demo provider, so all six share one "model" and the council would warn you about that.</p>
+  <div class="cards" id="primeCards" style="margin-top:16px"></div>
+  <div class="panel pad grid" style="gap:8px;margin-top:16px">
+    <h2>Providers</h2>
+    <p class="small muted" style="margin:0">Status never claims more than was checked. Keys live only on your own server in the real app; this page has none.</p>
+    <div class="tablebox"><table id="provTable"></table></div>
+  </div>
+</section>
+</main>
+
+<footer><div class="wrap">Prime Council is an open project. Primes are AI models and agents are simulations: not people and not conscious beings. This page is a demo; to run the real app with your own models, see the <a href="https://github.com/mfadaee/Prime-council#quick-start" target="_blank" rel="noopener">quick start</a>.</div></footer>
+
+<div class="drawer" id="drawer" hidden role="dialog" aria-modal="false" aria-labelledby="drawerTitle"></div>
+<div class="toast" id="toast" hidden role="status"></div>
+
+<script>
+// <engine> — generated by scripts/build-pages-demo.mjs from src/lib/sim/types.ts + engine.ts. Do not edit by hand.
+const RESOURCES = [
+    "food",
+    "wood",
+    "tools",
+    "knowledge"
+];
+const INHABITANT_ROLES = [
+    "farmer",
+    "forester",
+    "crafter",
+    "trader",
+    "builder",
+    "scholar"
+];
+const DEFAULT_WORLD_CONFIG = {
+    maxPopulation: 12,
+    maxOrganizations: 3,
+    growthEnabled: true,
+    councilThresholdCredits: 75,
+    councilAutoApply: false
+};
+const SHIFT_NAMES = [
+    "Morning",
+    "Afternoon",
+    "Evening"
+];
+const shiftOf = (tick)=>SHIFT_NAMES[tick % 3];
+const dayOf = (tick)=>Math.floor(tick / 3) + 1;
+
+
+function rand(state) {
+    let t = state + 0x6d2b79f5 | 0;
+    const next = t;
+    t = Math.imul(t ^ t >>> 15, t | 1);
+    t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+    return [
+        ((t ^ t >>> 14) >>> 0) / 4294967296,
+        next
+    ];
+}
+const r2 = (n)=>Math.round(n * 100) / 100;
+const clamp = (n, lo, hi)=>Math.max(lo, Math.min(hi, n));
+const emptyStock = ()=>({
+        food: 0,
+        wood: 0,
+        tools: 0,
+        knowledge: 0
+    });
+const credits = (cents)=>(cents / 100).toFixed(2);
+const MARKET_RESERVE_CENTS = 2000;
+const BASE_PRICE = {
+    food: 300,
+    wood: 400,
+    tools: 1500,
+    knowledge: 600
+};
+const ROLE_COLORS = {
+    farmer: "#3DDC97",
+    forester: "#8BD450",
+    crafter: "#FFB15C",
+    trader: "#5CC8FF",
+    builder: "#B79CFF",
+    scholar: "#FF8FCB"
+};
+const ROLE_PLACE = {
+    farmer: "farm",
+    forester: "forest",
+    crafter: "workshop",
+    trader: "market",
+    builder: "forest",
+    scholar: "hall"
+};
+const ROLE_GOAL = {
+    farmer: "Keep everyone fed",
+    forester: "Supply timber for the village",
+    crafter: "Make enough tools for every trade",
+    trader: "Keep goods moving at fair prices",
+    builder: "Build what the community needs",
+    scholar: "Grow the community's knowledge"
+};
+const NAMES = [
+    "Ada",
+    "Bram",
+    "Cyra",
+    "Dov",
+    "Esme",
+    "Fen",
+    "Gil",
+    "Hana",
+    "Ivo",
+    "Juno",
+    "Kai",
+    "Lior",
+    "Mira",
+    "Nils",
+    "Oona",
+    "Pax",
+    "Quin",
+    "Rhea",
+    "Sol",
+    "Tamsin"
+];
+const TEMPLATES = {
+    irrigation: {
+        kind: "irrigation",
+        name: "Irrigation channels",
+        costCents: 6000,
+        materials: {
+            wood: 8,
+            tools: 2
+        },
+        work: 20,
+        proposerRole: "farmer"
+    },
+    granary: {
+        kind: "granary",
+        name: "Granary",
+        costCents: 5000,
+        materials: {
+            wood: 10
+        },
+        work: 16,
+        proposerRole: "farmer"
+    },
+    workshop: {
+        kind: "workshop",
+        name: "Workshop expansion",
+        costCents: 7000,
+        materials: {
+            wood: 10,
+            tools: 1
+        },
+        work: 18,
+        proposerRole: "crafter"
+    },
+    homes: {
+        kind: "homes",
+        name: "New homes",
+        costCents: 8000,
+        materials: {
+            wood: 16,
+            tools: 2
+        },
+        work: 24,
+        proposerRole: "builder",
+        repeatable: 3
+    },
+    library: {
+        kind: "library",
+        name: "Library",
+        costCents: 9000,
+        materials: {
+            wood: 12,
+            tools: 2
+        },
+        work: 22,
+        proposerRole: "scholar"
+    },
+    market_hall: {
+        kind: "market_hall",
+        name: "Market hall",
+        costCents: 10000,
+        materials: {
+            wood: 14,
+            tools: 3
+        },
+        work: 26,
+        proposerRole: "trader"
+    }
+};
+function makeInhabitant(state, role, nameIdx, cents) {
+    const home = state.locations.filter((l)=>l.kind === "home").find((h)=>state.inhabitants.filter((i)=>i.homeId === h.id).length < (h.capacity ?? 2));
+    const work = state.locations.find((l)=>l.kind === ROLE_PLACE[role]);
+    let v;
+    [v, state.rng] = rand(state.rng);
+    const name = NAMES[nameIdx % NAMES.length] + (nameIdx >= NAMES.length ? ` ${Math.floor(nameIdx / NAMES.length) + 1}` : "");
+    return {
+        id: `inh_${name.toLowerCase().replace(/\s+/g, "")}`,
+        name,
+        role,
+        color: ROLE_COLORS[role],
+        skill: r2(0.45 + v * 0.3),
+        goal: ROLE_GOAL[role],
+        homeId: home?.id ?? state.locations.find((l)=>l.kind === "home").id,
+        workplaceId: work.id,
+        cents,
+        inventory: {
+            ...emptyStock(),
+            food: 2
+        },
+        energy: 90,
+        hunger: 10,
+        relationships: {},
+        action: {
+            kind: "idle",
+            locationId: home?.id ?? work.id,
+            detail: "Settling in"
+        },
+        joinedTick: state.tick,
+        createdBy: state.primes.length ? state.primes[nameIdx % state.primes.length].id : "council"
+    };
+}
+function createWorld(seed, config = {}, name = "Ember Hollow", primes = []) {
+    const state = {
+        version: 1,
+        primes,
+        name,
+        seed,
+        rng: seed >>> 0,
+        tick: 0,
+        branch: 0,
+        config: {
+            ...DEFAULT_WORLD_CONFIG,
+            ...config
+        },
+        treasury: {
+            cents: 20000,
+            stock: {
+                food: 24,
+                wood: 12,
+                tools: 3,
+                knowledge: 0
+            }
+        },
+        prices: {
+            ...BASE_PRICE
+        },
+        locations: [
+            {
+                id: "loc_hall",
+                name: "Commons Hall",
+                kind: "hall",
+                x: 50,
+                y: 30
+            },
+            {
+                id: "loc_market",
+                name: "Market",
+                kind: "market",
+                x: 66,
+                y: 36
+            },
+            {
+                id: "loc_farm",
+                name: "Riverside Farm",
+                kind: "farm",
+                x: 20,
+                y: 44
+            },
+            {
+                id: "loc_forest",
+                name: "Old Wood",
+                kind: "forest",
+                x: 84,
+                y: 14
+            },
+            {
+                id: "loc_workshop",
+                name: "Workshop",
+                kind: "workshop",
+                x: 34,
+                y: 18
+            },
+            {
+                id: "loc_site",
+                name: "Building site",
+                kind: "site",
+                x: 16,
+                y: 16
+            },
+            {
+                id: "loc_home1",
+                name: "Hearth Row 1",
+                kind: "home",
+                x: 40,
+                y: 50,
+                capacity: 2
+            },
+            {
+                id: "loc_home2",
+                name: "Hearth Row 2",
+                kind: "home",
+                x: 52,
+                y: 52,
+                capacity: 2
+            },
+            {
+                id: "loc_home3",
+                name: "Hearth Row 3",
+                kind: "home",
+                x: 64,
+                y: 50,
+                capacity: 2
+            }
+        ],
+        inhabitants: [],
+        organizations: [],
+        projects: [],
+        built: [],
+        modifiers: {
+            farm: 1,
+            workshop: 1,
+            library: 1,
+            sellSpread: 0.9,
+            spoilage: 0.02
+        },
+        stats: {
+            tradesToday: 0,
+            turnoverCents: 0,
+            mealsMissed: 0
+        }
+    };
+    const roles = [
+        "farmer",
+        "forester",
+        "crafter",
+        "trader",
+        "builder",
+        "scholar"
+    ];
+    roles.forEach((r, i)=>state.inhabitants.push(makeInhabitant(state, r, i, 2000)));
+    return {
+        state,
+        events: [
+            {
+                type: "world.created",
+                tick: 0,
+                text: `${name} is founded. ${primes.length ? `The Primes (${primes.map((p)=>p.name).join(", ")}) create its first agents` : "The council creates its first agents"}: ${state.inhabitants.map((i)=>i.name).join(", ")}. The treasury holds ${credits(state.treasury.cents)} fictional credits.`,
+                data: {
+                    seed,
+                    population: state.inhabitants.length
+                }
+            }
+        ]
+    };
+}
+function totalCents(s) {
+    return s.treasury.cents + s.inhabitants.reduce((n, i)=>n + i.cents, 0) + s.projects.reduce((n, p)=>n + p.escrowCents, 0);
+}
+function transfer(s, from, to, cents) {
+    cents = Math.round(cents);
+    if (cents <= 0) return true;
+    const bal = from === "treasury" ? s.treasury.cents : from.cents;
+    if (bal < cents) return false;
+    if (from === "treasury") s.treasury.cents -= cents;
+    else from.cents -= cents;
+    if (to === "treasury") s.treasury.cents += cents;
+    else to.cents += cents;
+    return true;
+}
+const MAX_TIES = 12;
+function prune(rel) {
+    const keys = Object.keys(rel);
+    if (keys.length <= MAX_TIES) return;
+    keys.sort((x, y)=>rel[x] - rel[y] || (x < y ? -1 : 1));
+    for (const k of keys.slice(0, keys.length - MAX_TIES))delete rel[k];
+}
+function bond(a, b, amount) {
+    if (a.id === b.id) return;
+    a.relationships[b.id] = r2(clamp((a.relationships[b.id] ?? 0) + amount, -1, 1));
+    b.relationships[a.id] = r2(clamp((b.relationships[a.id] ?? 0) + amount, -1, 1));
+    prune(a.relationships);
+    prune(b.relationships);
+}
+function guildBonus(s, i) {
+    return s.organizations.some((o)=>o.kind === "guild" && o.memberIds.includes(i.id)) ? 1.1 : 1;
+}
+function targetStock(s) {
+    const pop = Math.max(1, s.inhabitants.length);
+    return {
+        food: pop * 4,
+        wood: pop * 3,
+        tools: Math.max(3, pop * 0.5),
+        knowledge: pop * 2
+    };
+}
+function updatePrices(s) {
+    const target = targetStock(s);
+    for (const r of RESOURCES){
+        const ratio = target[r] / Math.max(0.5, s.treasury.stock[r]);
+        s.prices[r] = Math.round(BASE_PRICE[r] * clamp(Math.pow(ratio, 0.35), 0.5, 2.5));
+    }
+}
+function workShift(s, events) {
+    const active = s.projects.find((p)=>p.status === "active");
+    const byLoc = new Map();
+    for (const i of s.inhabitants){
+        const tired = i.energy < 15;
+        const hungry = i.hunger > 60;
+        const eff = (hungry ? 0.5 : 1) * guildBonus(s, i) * (i.inventory.tools >= 1 ? 1.2 : 1);
+        if (tired) {
+            i.action = {
+                kind: "resting",
+                locationId: i.homeId,
+                detail: "Too tired to work"
+            };
+            i.energy = clamp(i.energy + 10, 0, 100);
+            continue;
+        }
+        let loc = i.workplaceId;
+        switch(i.role){
+            case "farmer":
+                {
+                    const out = r2(2.6 * i.skill * eff * s.modifiers.farm);
+                    i.inventory.food = r2(i.inventory.food + out);
+                    i.action = {
+                        kind: "working",
+                        locationId: loc,
+                        detail: `Harvested ${out} food`
+                    };
+                    break;
+                }
+            case "forester":
+                {
+                    const out = r2(2.2 * i.skill * eff);
+                    i.inventory.wood = r2(i.inventory.wood + out);
+                    i.action = {
+                        kind: "working",
+                        locationId: loc,
+                        detail: `Cut ${out} wood`
+                    };
+                    break;
+                }
+            case "crafter":
+                {
+                    if (i.inventory.wood >= 2) {
+                        const out = r2(1 * eff * s.modifiers.workshop * (0.6 + i.skill * 0.6));
+                        i.inventory.wood = r2(i.inventory.wood - 2);
+                        i.inventory.tools = r2(i.inventory.tools + out);
+                        i.action = {
+                            kind: "working",
+                            locationId: loc,
+                            detail: `Made ${out} tools from 2 wood`
+                        };
+                    } else i.action = {
+                        kind: "idle",
+                        locationId: loc,
+                        detail: "Waiting for wood"
+                    };
+                    break;
+                }
+            case "trader":
+                {
+                    i.action = {
+                        kind: "trading",
+                        locationId: loc,
+                        detail: "Keeping the market stalls"
+                    };
+                    break;
+                }
+            case "scholar":
+                {
+                    const out = r2(1.2 * i.skill * eff * s.modifiers.library);
+                    s.treasury.stock.knowledge = r2(s.treasury.stock.knowledge + out);
+                    const paid = transfer(s, "treasury", i, 150);
+                    i.action = {
+                        kind: "studying",
+                        locationId: loc,
+                        detail: `Recorded ${out} knowledge${paid ? " (stipend 1.50)" : " (no stipend: treasury empty)"}`
+                    };
+                    break;
+                }
+            case "builder":
+                {
+                    if (active) {
+                        loc = "loc_site";
+                        const done = r2(2 * (0.5 + i.skill) * eff);
+                        active.progress = r2(Math.min(active.workRequired, active.progress + done));
+                        if (!active.assignedIds.includes(i.id)) active.assignedIds.push(i.id);
+                        const wage = Math.min(300, active.escrowCents);
+                        active.escrowCents -= wage;
+                        i.cents += wage;
+                        i.action = {
+                            kind: "building",
+                            locationId: "loc_site",
+                            detail: `Built ${done} on ${active.name}`
+                        };
+                    } else {
+                        const out = r2(1.6 * i.skill * eff);
+                        i.inventory.wood = r2(i.inventory.wood + out);
+                        loc = "loc_forest";
+                        i.action = {
+                            kind: "working",
+                            locationId: loc,
+                            detail: `No active project — cut ${out} wood`
+                        };
+                    }
+                    break;
+                }
+        }
+        i.energy = clamp(i.energy - 18, 0, 100);
+        i.hunger = clamp(i.hunger + 12, 0, 100);
+        i.skill = r2(Math.min(1, i.skill + 0.005 * (s.built.includes("library") ? 1.5 : 1)));
+        byLoc.set(i.action.locationId, [
+            ...byLoc.get(i.action.locationId) ?? [],
+            i
+        ]);
+    }
+    for (const group of byLoc.values())for(let a = 0; a < group.length; a++)for(let b = a + 1; b < group.length; b++)bond(group[a], group[b], 0.02);
+    if (active && active.progress >= active.workRequired) completeProject(s, active, events);
+}
+function completeProject(s, p, events) {
+    p.status = "done";
+    s.treasury.cents += p.escrowCents;
+    p.escrowCents = 0;
+    s.built.push(p.kind);
+    const SPOTS = {
+        granary: {
+            x: 4,
+            y: 28
+        },
+        library: {
+            x: 70,
+            y: 22
+        }
+    };
+    const at = SPOTS[p.kind] ?? {
+        x: 50,
+        y: 10
+    };
+    switch(p.kind){
+        case "irrigation":
+            s.modifiers.farm = r2(s.modifiers.farm * 1.25);
+            break;
+        case "granary":
+            s.modifiers.spoilage = 0;
+            s.locations.push({
+                id: `loc_granary`,
+                name: "Granary",
+                kind: "granary",
+                ...at
+            });
+            break;
+        case "workshop":
+            s.modifiers.workshop = r2(s.modifiers.workshop * 1.5);
+            break;
+        case "library":
+            s.modifiers.library = r2(s.modifiers.library * 2);
+            s.locations.push({
+                id: `loc_library`,
+                name: "Library",
+                kind: "library",
+                ...at
+            });
+            s.inhabitants.filter((i)=>i.role === "scholar").forEach((i)=>i.workplaceId = "loc_library");
+            break;
+        case "market_hall":
+            s.modifiers.sellSpread = 0.95;
+            break;
+        case "homes":
+            {
+                const n = s.locations.filter((l)=>l.kind === "home").length + 1;
+                s.locations.push({
+                    id: `loc_home${n}`,
+                    name: `Hearth Row ${n}`,
+                    kind: "home",
+                    x: 28 + n * 9,
+                    y: 56,
+                    capacity: 2
+                });
+                break;
+            }
+    }
+    for (const id of p.assignedIds)for (const id2 of p.assignedIds)if (id < id2) bond(s.inhabitants.find((i)=>i.id === id), s.inhabitants.find((i)=>i.id === id2), 0.05);
+    events.push({
+        type: "project.completed",
+        tick: s.tick,
+        text: `${p.name} is complete. ${benefitText(p.kind)}`,
+        data: {
+            projectId: p.id,
+            kind: p.kind
+        }
+    });
+}
+function benefitText(kind) {
+    return ({
+        irrigation: "Farm yields rise by 25%.",
+        granary: "Stored food no longer spoils.",
+        workshop: "Tool output rises by 50%.",
+        homes: "Housing for two more inhabitants.",
+        library: "Scholarship doubles and skills grow faster.",
+        market_hall: "Sellers keep 95% of market price instead of 90%."
+    })[kind];
+}
+function evening(s, events) {
+    let levy = 0;
+    for (const i of s.inhabitants){
+        const excess = i.cents - 3000;
+        if (excess > 0) {
+            const due = Math.round(excess * 0.15);
+            transfer(s, i, "treasury", due);
+            levy += due;
+        }
+    }
+    if (levy) events.push({
+        type: "trade",
+        tick: s.tick,
+        text: `The community levy returns ${credits(levy)} credits to the treasury.`,
+        data: {
+            levyCents: levy
+        }
+    });
+    const surplusCash = s.treasury.cents - 10000;
+    if (surplusCash > 0 && s.inhabitants.length) {
+        const each = Math.floor(surplusCash * 0.2 / s.inhabitants.length);
+        if (each > 0) {
+            for (const i of s.inhabitants)transfer(s, "treasury", i, each);
+            events.push({
+                type: "trade",
+                tick: s.tick,
+                text: `The treasury pays a dividend of ${credits(each)} credits to each inhabitant.`,
+                data: {
+                    dividendCents: each
+                }
+            });
+        }
+    }
+    updatePrices(s);
+    const trader = s.inhabitants.find((i)=>i.role === "trader");
+    let turnover = 0;
+    let trades = 0;
+    let missed = 0;
+    const keep = (i)=>({
+            food: 3,
+            wood: i.role === "crafter" ? 4 : 0,
+            tools: 1,
+            knowledge: 0
+        });
+    for (const i of s.inhabitants){
+        for (const r of [
+            "food",
+            "wood",
+            "tools"
+        ]){
+            const surplus = Math.floor(i.inventory[r] - keep(i)[r]);
+            if (surplus <= 0) continue;
+            const unit = Math.round(s.prices[r] * s.modifiers.sellSpread);
+            const demand = Math.max(0, Math.floor(targetStock(s)[r] * 2 - s.treasury.stock[r]));
+            const affordable = Math.min(surplus, demand, Math.floor(s.treasury.cents / Math.max(1, unit)));
+            if (affordable <= 0) continue;
+            transfer(s, "treasury", i, affordable * unit);
+            i.inventory[r] = r2(i.inventory[r] - affordable);
+            s.treasury.stock[r] = r2(s.treasury.stock[r] + affordable);
+            turnover += affordable * unit;
+            trades++;
+            if (trader) bond(i, trader, 0.01);
+        }
+    }
+    for (const i of s.inhabitants){
+        if (i.role === "crafter" && i.inventory.wood < 4) {
+            const want = Math.min(4 - Math.floor(i.inventory.wood), Math.floor(s.treasury.stock.wood), Math.floor(i.cents / s.prices.wood));
+            if (want > 0 && transfer(s, i, "treasury", want * s.prices.wood)) {
+                i.inventory.wood = r2(i.inventory.wood + want);
+                s.treasury.stock.wood = r2(s.treasury.stock.wood - want);
+                turnover += want * s.prices.wood;
+                trades++;
+            }
+        }
+        if ([
+            "farmer",
+            "forester",
+            "builder"
+        ].includes(i.role) && i.inventory.tools < 1 && s.treasury.stock.tools >= 1 && i.cents >= s.prices.tools * 1.5) {
+            if (transfer(s, i, "treasury", s.prices.tools)) {
+                i.inventory.tools = r2(i.inventory.tools + 1);
+                s.treasury.stock.tools = r2(s.treasury.stock.tools - 1);
+                turnover += s.prices.tools;
+                trades++;
+            }
+        }
+    }
+    if (trader && turnover > 0) transfer(s, "treasury", trader, Math.round(turnover * 0.03));
+    let gifts = 0;
+    let p2p = 0;
+    let commons = 0;
+    for (const i of s.inhabitants){
+        if (i.inventory.food >= 1) {
+            i.inventory.food = r2(i.inventory.food - 1);
+            i.hunger = 0;
+            i.action = {
+                kind: "eating",
+                locationId: "loc_hall",
+                detail: "Supper at the Commons Hall"
+            };
+            continue;
+        }
+        if (s.treasury.stock.food >= 1 && transfer(s, i, "treasury", s.prices.food)) {
+            s.treasury.stock.food = r2(s.treasury.stock.food - 1);
+            i.hunger = 0;
+            turnover += s.prices.food;
+            trades++;
+            i.action = {
+                kind: "eating",
+                locationId: "loc_hall",
+                detail: `Bought supper at the market (${credits(s.prices.food)})`
+            };
+            continue;
+        }
+        if (s.treasury.stock.food >= 1) {
+            s.treasury.stock.food = r2(s.treasury.stock.food - 1);
+            i.hunger = 0;
+            commons++;
+            i.action = {
+                kind: "eating",
+                locationId: "loc_hall",
+                detail: "Fed by the commons kitchen"
+            };
+            continue;
+        }
+        const seller = s.inhabitants.filter((o)=>o.id !== i.id && o.inventory.food >= 4).sort((a, b)=>(i.relationships[b.id] ?? 0) - (i.relationships[a.id] ?? 0) || b.inventory.food - a.inventory.food)[0];
+        if (seller) {
+            if (i.cents >= s.prices.food && transfer(s, i, seller, s.prices.food)) {
+                p2p++;
+                trades++;
+                turnover += s.prices.food;
+                i.action = {
+                    kind: "eating",
+                    locationId: "loc_hall",
+                    detail: `Bought supper from ${seller.name}`
+                };
+            } else if ((seller.relationships[i.id] ?? 0) >= 0.1) {
+                gifts++;
+                bond(i, seller, 0.03);
+                i.action = {
+                    kind: "eating",
+                    locationId: "loc_hall",
+                    detail: `${seller.name} shared supper`
+                };
+            } else {
+                i.hunger = clamp(i.hunger + 25, 0, 100);
+                missed++;
+                i.action = {
+                    kind: "hungry",
+                    locationId: i.homeId,
+                    detail: "Could not afford food tonight"
+                };
+                continue;
+            }
+            seller.inventory.food = r2(seller.inventory.food - 1);
+            i.hunger = 0;
+            continue;
+        }
+        i.hunger = clamp(i.hunger + 25, 0, 100);
+        missed++;
+        i.action = {
+            kind: "hungry",
+            locationId: i.homeId,
+            detail: "There was no food to be had"
+        };
+    }
+    if (gifts || p2p) events.push({
+        type: "trade",
+        tick: s.tick,
+        text: `Neighbours traded ${p2p} supper(s) directly and shared ${gifts} for free.`,
+        data: {
+            p2p,
+            gifts
+        }
+    });
+    if (commons) events.push({
+        type: "trade",
+        tick: s.tick,
+        text: `The commons kitchen fed ${commons} inhabitant(s) who could not pay.`,
+        data: {
+            commons
+        }
+    });
+    if (missed) events.push({
+        type: "hunger",
+        tick: s.tick,
+        text: `${missed} inhabitant(s) went to bed hungry.`,
+        data: {
+            missed
+        }
+    });
+    for (const i of s.inhabitants)i.energy = clamp(i.energy + (i.hunger > 60 ? 25 : 55), 0, 100);
+    s.treasury.stock.food = r2(s.treasury.stock.food * (1 - s.modifiers.spoilage));
+    const eaters = s.inhabitants.filter((i)=>i.action.kind === "eating");
+    for(let a = 0; a < eaters.length; a++)for(let b = a + 1; b < eaters.length; b++)bond(eaters[a], eaters[b], 0.005);
+    s.stats = {
+        tradesToday: trades,
+        turnoverCents: turnover,
+        mealsMissed: missed
+    };
+    if (trades) events.push({
+        type: "trade",
+        tick: s.tick,
+        text: `Market day: ${trades} trades, ${credits(turnover)} credits changed hands.`,
+        data: {
+            trades,
+            turnoverCents: turnover
+        }
+    });
+    communityRules(s, events);
+}
+function needScore(s, kind) {
+    const pop = s.inhabitants.length;
+    const housing = s.locations.filter((l)=>l.kind === "home").reduce((n, h)=>n + (h.capacity ?? 2), 0);
+    switch(kind){
+        case "irrigation":
+            return 6 - s.treasury.stock.food / pop;
+        case "granary":
+            return s.treasury.stock.food > pop * 2 ? 3 : 1;
+        case "workshop":
+            return 4 - s.treasury.stock.tools;
+        case "homes":
+            return pop >= housing - 1 ? 6 : 0;
+        case "library":
+            return s.treasury.stock.knowledge >= 8 ? 3 : 0.5;
+        case "market_hall":
+            return s.stats.tradesToday >= 6 ? 2.5 : 0.5;
+    }
+}
+function rationale(s, kind) {
+    const pop = s.inhabitants.length;
+    const perCap = (s.treasury.stock.food / pop).toFixed(1);
+    return ({
+        irrigation: `The stores hold ${perCap} food per person; better water would raise farm yields.`,
+        granary: `Stored food spoils at ${Math.round(s.modifiers.spoilage * 100)}% a night; a granary would keep it.`,
+        workshop: `The treasury has ${s.treasury.stock.tools} tools for ${pop} people; a bigger workshop would help every trade.`,
+        homes: `${pop} people share homes built for ${s.locations.filter((l)=>l.kind === "home").reduce((n, h)=>n + (h.capacity ?? 2), 0)}; newcomers need somewhere to live.`,
+        library: `We have recorded ${s.treasury.stock.knowledge} knowledge; a library would let scholarship grow.`,
+        market_hall: `${s.stats.tradesToday} trades a day happen in the open; a hall would let sellers keep more.`
+    })[kind];
+}
+function communityRules(s, events) {
+    const day = dayOf(s.tick);
+    const open = s.projects.filter((p)=>[
+            "proposed",
+            "awaiting_council",
+            "approved",
+            "active"
+        ].includes(p.status));
+    if (day % 2 === 0 && open.length < 2) {
+        const candidates = Object.keys(TEMPLATES).filter((k)=>{
+            const t = TEMPLATES[k];
+            const pending = s.projects.some((p)=>p.kind === k && p.status !== "done" && p.status !== "rejected");
+            const built = s.built.filter((b)=>b === k).length;
+            return !pending && built < (t.repeatable ?? 1);
+        }).map((k)=>({
+                k,
+                score: needScore(s, k)
+            })).filter((c)=>c.score > 1).sort((a, b)=>b.score - a.score || a.k.localeCompare(b.k));
+        const pick = candidates[0];
+        if (pick) {
+            const t = TEMPLATES[pick.k];
+            const proposer = s.inhabitants.filter((i)=>i.role === t.proposerRole).sort((a, b)=>b.skill - a.skill)[0] ?? [
+                ...s.inhabitants
+            ].sort((a, b)=>b.skill - a.skill)[0];
+            const p = {
+                id: `prj_${s.tick}_${pick.k}`,
+                kind: pick.k,
+                name: t.name,
+                proposerId: proposer.id,
+                rationale: rationale(s, pick.k),
+                costCents: t.costCents,
+                escrowCents: 0,
+                materials: t.materials,
+                workRequired: t.work,
+                progress: 0,
+                status: "proposed",
+                assignedIds: [],
+                proposedTick: s.tick
+            };
+            s.projects.push(p);
+            events.push({
+                type: "project.proposed",
+                tick: s.tick,
+                text: `${proposer.name} proposes ${t.name}: ${p.rationale}`,
+                data: {
+                    projectId: p.id,
+                    proposerId: proposer.id,
+                    costCents: p.costCents
+                }
+            });
+        }
+    }
+    for (const p of s.projects){
+        if (p.status === "proposed") {
+            if (p.costCents > s.config.councilThresholdCredits * 100) {
+                p.status = "awaiting_council";
+                events.push({
+                    type: "project.council_needed",
+                    tick: s.tick,
+                    text: `${p.name} costs ${credits(p.costCents)} credits — above the ${s.config.councilThresholdCredits}-credit threshold, so it awaits a council decision.`,
+                    data: {
+                        projectId: p.id
+                    }
+                });
+            } else {
+                p.status = "approved";
+                p.decidedBy = "rules";
+                events.push({
+                    type: "project.approved",
+                    tick: s.tick,
+                    text: `${p.name} is approved by community rule (under the council threshold).`,
+                    data: {
+                        projectId: p.id,
+                        by: "rules"
+                    }
+                });
+            }
+        }
+    }
+    if (!s.projects.some((p)=>p.status === "active")) {
+        const next = s.projects.find((p)=>p.status === "approved");
+        if (next) fund(s, next, events);
+    }
+    const pop = s.inhabitants.length;
+    const housing = s.locations.filter((l)=>l.kind === "home").reduce((n, h)=>n + (h.capacity ?? 2), 0);
+    if (s.config.growthEnabled && pop < s.config.maxPopulation && pop < housing && s.treasury.stock.food >= pop * 3 && s.treasury.cents >= 1500) {
+        const counts = new Map();
+        for (const i of s.inhabitants)counts.set(i.role, (counts.get(i.role) ?? 0) + 1);
+        const role = [
+            "farmer",
+            "forester",
+            "builder",
+            "crafter",
+            "scholar",
+            "trader"
+        ].sort((a, b)=>(counts.get(a) ?? 0) - (counts.get(b) ?? 0))[0];
+        const newcomer = makeInhabitant(s, role, s.inhabitants.length, 0);
+        transfer(s, "treasury", newcomer, 1500);
+        s.inhabitants.push(newcomer);
+        const creator = s.primes.find((p)=>p.id === newcomer.createdBy)?.name;
+        events.push({
+            type: "inhabitant.arrived",
+            tick: s.tick,
+            text: `${creator ? `${creator} creates a new agent: ` : ""}${newcomer.name} settles as a ${role}, with 15.00 credits from the treasury.`,
+            data: {
+                inhabitantId: newcomer.id,
+                role,
+                createdBy: newcomer.createdBy
+            }
+        });
+    }
+    if (s.organizations.length < s.config.maxOrganizations) {
+        for (const role of [
+            "farmer",
+            "forester",
+            "crafter",
+            "builder",
+            "scholar",
+            "trader"
+        ]){
+            if (s.organizations.length >= s.config.maxOrganizations) break;
+            const members = s.inhabitants.filter((i)=>i.role === role);
+            if (members.length >= 3 && !s.organizations.some((o)=>o.role === role)) {
+                const name = `${role[0].toUpperCase()}${role.slice(1)}s' Guild`;
+                s.organizations.push({
+                    id: `org_${role}`,
+                    name,
+                    kind: "guild",
+                    role,
+                    memberIds: members.map((m)=>m.id),
+                    foundedTick: s.tick
+                });
+                events.push({
+                    type: "organization.founded",
+                    tick: s.tick,
+                    text: `${members.map((m)=>m.name).join(", ")} found the ${name}.`,
+                    data: {
+                        role
+                    }
+                });
+            }
+        }
+    }
+    for (const o of s.organizations)if (o.role) o.memberIds = s.inhabitants.filter((i)=>i.role === o.role).map((i)=>i.id);
+}
+function fund(s, p, events) {
+    const enoughMaterials = Object.entries(p.materials).every(([r, n])=>s.treasury.stock[r] >= n);
+    if (s.treasury.cents - p.costCents >= MARKET_RESERVE_CENTS && enoughMaterials) {
+        s.treasury.cents -= p.costCents;
+        p.escrowCents = p.costCents;
+        for (const [r, n] of Object.entries(p.materials))s.treasury.stock[r] = r2(s.treasury.stock[r] - n);
+        p.status = "active";
+        p.note = undefined;
+        events.push({
+            type: "project.funded",
+            tick: s.tick,
+            text: `${p.name} is funded and construction begins.`,
+            data: {
+                projectId: p.id
+            }
+        });
+    } else if (p.note !== "waiting for funds") {
+        p.note = "waiting for funds";
+        const missing = Object.entries(p.materials).filter(([r, n])=>s.treasury.stock[r] < n).map(([r, n])=>`${r} ${s.treasury.stock[r]}/${n}`);
+        events.push({
+            type: "project.waiting_funds",
+            tick: s.tick,
+            text: `${p.name} waits for resources (credits ${credits(s.treasury.cents)}/${credits(p.costCents + MARKET_RESERVE_CENTS)} incl. market reserve${missing.length ? `; ${missing.join(", ")}` : ""}).`,
+            data: {
+                projectId: p.id
+            }
+        });
+    }
+}
+function clone(v) {
+    return structuredClone(v);
+}
+function step(input) {
+    const s = clone(input);
+    const events = [];
+    const shift = s.tick % 3;
+    if (shift === 2) evening(s, events);
+    else workShift(s, events);
+    const pop = s.inhabitants.length;
+    events.push({
+        type: "tick.summary",
+        tick: s.tick,
+        text: `Day ${dayOf(s.tick)} ${[
+            "morning",
+            "afternoon",
+            "evening"
+        ][shift]}: ${pop} inhabitants, treasury ${credits(s.treasury.cents)} credits, food ${s.treasury.stock.food}.`,
+        data: {
+            population: pop,
+            treasuryCents: s.treasury.cents,
+            stock: {
+                ...s.treasury.stock
+            }
+        }
+    });
+    s.tick += 1;
+    return {
+        state: s,
+        events
+    };
+}
+function decide(input, projectId, decision, meta) {
+    const s = clone(input);
+    const p = s.projects.find((x)=>x.id === projectId);
+    if (!p || p.status !== "awaiting_council") throw new Error("Project is not awaiting a decision");
+    const events = [];
+    p.decidedBy = meta.by;
+    p.sessionId = meta.sessionId ?? null;
+    const who = meta.by === "council" ? "The Prime Council" : "The Founder";
+    if (decision === "approve") {
+        p.status = "approved";
+        events.push({
+            type: "council.decision",
+            tick: s.tick,
+            text: `${who} approves ${p.name}.${meta.reason ? ` ${meta.reason}` : ""}`,
+            data: {
+                projectId,
+                decision,
+                ...meta
+            }
+        });
+        if (!s.projects.some((x)=>x.status === "active")) fund(s, p, events);
+    } else {
+        p.status = "rejected";
+        events.push({
+            type: "council.decision",
+            tick: s.tick,
+            text: `${who} rejects ${p.name}.${meta.reason ? ` ${meta.reason}` : ""}`,
+            data: {
+                projectId,
+                decision,
+                ...meta
+            }
+        });
+    }
+    return {
+        state: s,
+        events
+    };
+}
+function parseRecommendation(answer) {
+    const m = answer.match(/\bDECISION:\s*(APPROVE|REJECT)\b/i);
+    if (m) return m[1].toLowerCase();
+    return null;
+}
+function councilQuestion(s, p) {
+    const proposer = s.inhabitants.find((i)=>i.id === p.proposerId);
+    const mats = Object.entries(p.materials).map(([r, n])=>`${n} ${r}`).join(", ");
+    return `[Simulated world: ${s.name} — fictional economy, built by the Primes under their charter] ${proposer?.name ?? "An inhabitant"} (${proposer?.role ?? "?"}) proposes "${p.name}". Cost: ${credits(p.costCents)} fictional credits plus ${mats || "no materials"}; ${p.workRequired} units of construction work. Benefit: ${benefitText(p.kind)} Rationale given: ${p.rationale}
+Current state: ${s.inhabitants.length} inhabitants, treasury ${credits(s.treasury.cents)} credits, stores ${JSON.stringify(s.treasury.stock)}, day ${dayOf(s.tick)}.
+Should the community fund this project now? Begin your final answer with "DECISION: APPROVE" or "DECISION: REJECT", then explain.`;
+}
+
+// </engine>
+</script>
+<script>
+(()=>{
+"use strict";
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const store={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d;}catch(e){return d;}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}};
+function toast(t){const el=$("toast");el.textContent=t;el.hidden=false;clearTimeout(toast._t);toast._t=setTimeout(()=>el.hidden=true,2600);}
+
+/* ---------- council domain (from src/lib/council/seed.ts, roles.ts, meta.ts) ---------- */
+const DEFAULT_MEMBERS=[
+  {id:"aurelia",name:"Aurelia",role:"chair",color:"#F5B942",monogram:"A",persona:"Calm and precise; keeps the Primes focused on the charter and on what the Founder actually asked."},
+  {id:"quill",name:"Quill",role:"analyst",color:"#4CC3FF",monogram:"Q",persona:"Clear and structured; prefers a direct answer followed by the reasoning that supports it."},
+  {id:"vex",name:"Vex",role:"skeptic",color:"#FF7A6B",monogram:"V",persona:"Fair-minded; challenges what is weak and acknowledges what is strong."},
+  {id:"lumen",name:"Lumen",role:"researcher",color:"#3DDC97",monogram:"L",persona:"Careful with sources; distinguishes verified, likely and unverified claims."},
+  {id:"forge",name:"Forge",role:"builder",color:"#B79CFF",monogram:"F",persona:"Practical; thinks in steps, costs and failure modes."},
+  {id:"weave",name:"Weave",role:"synthesizer",color:"#FF8FCB",monogram:"W",persona:"Even-handed; writes the answer the evidence supports and names what remains open."},
+];
+const ROLES={
+  chair:{title:"Chair",glyph:"♛",summary:"Coordinates deliberation",contributes:false},
+  analyst:{title:"Analyst",glyph:"◆",summary:"Develops the main answer",contributes:true},
+  skeptic:{title:"Skeptic",glyph:"?",summary:"Challenges assumptions and weak evidence",contributes:true},
+  researcher:{title:"Researcher",glyph:"⌕",summary:"Gathers and checks sources",contributes:true},
+  builder:{title:"Builder",glyph:"⚒",summary:"Assesses practical implementation",contributes:true},
+  synthesizer:{title:"Synthesizer",glyph:"✦",summary:"Produces the final response",contributes:false},
+};
+const STATE_META={
+  idle:{label:"Idle",glyph:"·",color:"#8a92c4"},preparing:{label:"Preparing",glyph:"◌",color:"#5cc8ff"},
+  speaking:{label:"Speaking",glyph:"◉",color:"#ffd36e"},reviewing:{label:"Reviewing",glyph:"◎",color:"#c4a1ff"},
+  agreeing:{label:"Agreeing",glyph:"✓",color:"#4ade9a"},challenging:{label:"Challenging",glyph:"!",color:"#ff8a5b"},
+  blocked:{label:"Blocked",glyph:"■",color:"#ffc857"},offline:{label:"Offline",glyph:"×",color:"#6b7299"},
+};
+const KIND_LABEL={interpretation:"Interpretation",contribution:"Contribution",critique:"Critique",reply:"Reply",synthesis:"Synthesis",direct:"Direct reply"};
+const STANCE={challenge:{label:"challenges",color:"#ff8a5b"},support:{label:"supports",color:"#4ade9a"},refine:{label:"refines",color:"#5cc8ff"},reply:{label:"replies to",color:"#c4a1ff"},prime:{label:"addresses",color:"#ffd36e"}};
+const PHASE_LABEL={interpret:"Interpreting the request",independent:"Independent answers",critique:"Critique",resolve:"Responding to challenges",synthesize:"Synthesis",direct:"Direct conversation"};
+const LIMITS={maxRounds:1,hardMaxRounds:3,concurrency:3};
+
+let members=store.get("pc.members",null)||DEFAULT_MEMBERS.map((m,i)=>({...m,seat:i,providerId:"demo",model:"demo-simulated",enabled:true}));
+
+/* ---------- demo provider (port of src/lib/providers/adapters/demo.ts) ---------- */
+function hash(s){let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619);}return h>>>0;}
+const ANGLE={chair:"frame the question and keep deliberation on track",analyst:"develop the main answer, structured around the Founder's success criteria",skeptic:"test the weakest assumptions and ask what evidence would change the conclusion",researcher:"identify which claims need sources and check them (research tools are not enabled in demo mode)",builder:"assess what it would take to act on the answer: steps, effort, risks",synthesizer:"combine the strongest supported points into one answer"};
+function short(q){const s=q.replace(/\s+/g," ").trim();return s.length>90?`${s.slice(0,87)}…`:s;}
+function demoOutput(h,promptLen){
+  const q=short(h.question), seed=hash(`${h.phase}|${h.role}|${h.question}|${promptLen}`), angle=ANGLE[h.role]||"contribute from its role", targets=h.targets||[];
+  switch(h.phase){
+    case "interpret":return{restatement:`Simulated interpretation of the Founder's request: "${q}"`,constraints:["Demo mode: no model was called, so this session makes no factual claims","Answer the actual request directly and keep it concise"],successCriteria:["A direct answer","Evidence or an explicit note that none was checked","Stated uncertainty"]};
+    case "independent":return{answer:`[Simulated ${h.memberName}] A real model in this seat would ${angle} for: "${q}".`,rationale:"Demo placeholder — shows where this member's published rationale appears.",evidence:[],assumptions:[`Demo assumption ${(seed%3)+1}: details of the request are taken at face value`],confidence:0.4+((seed%40)/100)};
+    case "critique":{const target=targets[seed%Math.max(1,targets.length)];const stance=h.role==="skeptic"?"challenge":["support","refine","challenge"][seed%3];
+      return{critiques:target?[{targetMemberId:target.id,claim:`${target.name}'s main point`,stance,reason:`[Simulated] A real ${h.role} would ${stance==="challenge"?"contest":stance==="refine"?"sharpen":"back"} this point and say why.`}]:[],overall:stance==="challenge"?"partly":"agree"};}
+    case "resolve":return{response:["revise","defend","concede"][seed%3],updatedAnswer:`[Simulated ${h.memberName}] Position after critique (no model was called).`,reason:"Demo placeholder showing how a member responds to a challenge."};
+    case "synthesize":return{answer:`[Simulated final answer] In demo mode no model was called, so there is no substantive answer to "${q}". Configure a provider in Settings to get a real council answer.`,keyEvidence:[],uncertainty:["Everything in this session is simulated"],disagreements:[],deliberationEffect:"Demo: shows where the council explains how critique changed the initial answer.",confidence:0};
+    default:return{reply:`[Simulated ${h.memberName}] A real model would reply to your message here. No model was called.`};
+  }
+}
+
+/* ---------- sessions: event log + reducer ---------- */
+let sessions=store.get("pc.sessions",[]);
+let current=null;           // session being shown on the Council tab
+const runs=new Map();       // sessionId -> Run (live only)
+function saveSessions(){store.set("pc.sessions",sessions.slice(0,30).map(s=>({...s})));}
+
+function reduce(events,upto){
+  const st={states:{},links:[],speaking:null,speech:null,phase:null,round:0,messages:[],final:null,initial:null,status:"running",excluded:new Set(),override:null,calls:0,tin:0,tout:0,t:0};
+  const n=upto==null?events.length:upto;
+  for(let i=0;i<n;i++){const e=events[i];st.t=e.t||st.t;
+    switch(e.type){
+      case "session.started":for(const m of e.roster)st.states[m.id]=m.enabled?"idle":"offline";break;
+      case "phase.started":st.phase=e.phase;st.round=e.round;if(e.phase==="critique"||e.phase==="independent")st.links=[];break;
+      case "member.state":st.states[e.memberId]=e.state;if(e.state==="speaking")st.speaking=e.memberId;else if(st.speaking===e.memberId)st.speaking=null;break;
+      case "message":st.messages.push(e);st.speech={memberId:e.memberId,kind:e.kind,excerpt:excerpt(e)};st.calls++;st.tin+=e.tokensIn||0;st.tout+=e.tokensOut||0;break;
+      case "member.link":st.links.push(e);if(st.links.length>10)st.links.shift();break;
+      case "session.final":st.final=e.final;st.initial=e.initialAnswer;break;
+      case "session.status":st.status=e.status;if(e.status!=="running"){st.speaking=null;}break;
+      case "founder.action":
+        if(e.action==="exclude"){st.excluded.add(e.memberId);st.states[e.memberId]="offline";}
+        if(e.action==="include"){st.excluded.delete(e.memberId);st.states[e.memberId]="idle";}
+        if(e.action==="override")st.override=e.text;
+        if(e.action==="address"||e.action==="challenge")st.speech={memberId:"prime",kind:e.action,excerpt:e.text};
+        break;
+    }
+  }
+  return st;
+}
+function excerpt(e){const c=e.content||{};const t=c.answer||c.restatement||c.updatedAnswer||c.reply||(c.critiques&&c.critiques[0]&&`${STANCE[c.critiques[0].stance].label} ${memberName(c.critiques[0].targetMemberId)}: ${c.critiques[0].reason}`)||"";return t.length>180?t.slice(0,177)+"…":t;}
+function memberName(id){return id==="prime"?"Founder":(members.find(m=>m.id===id)||{name:id}).name;}
+function memberOf(s,id){return (s&&s.roster||members).find(m=>m.id===id)||members.find(m=>m.id===id);}
+
+/* ---------- the run (mirrors src/lib/council/orchestrator.ts in demo mode) ---------- */
+class Stop extends Error{}
+function sleep(ms,signal){return new Promise((res,rej)=>{if(signal.aborted)return rej(new Stop());const t=setTimeout(res,ms);signal.addEventListener("abort",()=>{clearTimeout(t);rej(new Stop());},{once:true});});}
+class Run{
+  constructor(s){this.s=s;this.ac=new AbortController();this.extra=0;this.focus=[];this.latest=new Map();this.initial=new Map();this.critiques=[];this.replies=[];this.round=0;this.interpretation=null;this.busy=false;}
+  emit(e){e.t=Date.now()-this.s.startedAt;this.s.events.push(e);onEvent(this.s,e);}
+  get roster(){return this.s.roster;}
+  active(m){return m.enabled&&!this.s.excluded.includes(m.id);}
+  contributors(){return this.roster.filter(m=>ROLES[m.role].contributes&&this.active(m));}
+  byRole(r){return this.roster.find(m=>m.role===r&&this.active(m));}
+  setState(id,state){this.emit({type:"member.state",memberId:id,state});}
+  async call(m,phase,round,targets,prep){
+    if(this.ac.signal.aborted)throw new Stop();
+    this.setState(m.id,prep);
+    const promptLen=this.s.question.length*3+(phase==="critique"?900:phase==="synthesize"?1400:500)+round*40;
+    const latency=450+(hash(m.role+phase+round+this.s.question)%900);
+    await sleep(latency/this.s.speed,this.ac.signal);
+    const out=demoOutput({phase,role:m.role,memberName:m.name,question:this.s.question,targets:targets&&targets.map(t=>({id:t.id,name:t.name}))},promptLen);
+    const text=JSON.stringify(out);
+    return{value:out,tokensIn:Math.ceil((promptLen+600)/4),tokensOut:Math.ceil(text.length/4),latency};
+  }
+  publish(m,kind,phase,round,r,replyTo){this.setState(m.id,"speaking");this.emit({type:"message",id:"m"+this.s.events.length,memberId:m.id,kind,phase,round,content:r.value,replyTo:replyTo||[],tokensIn:r.tokensIn,tokensOut:r.tokensOut,latency:r.latency,simulated:true});}
+  async pool(items,fn){const q=items.slice();const n=Math.min(LIMITS.concurrency,q.length);await Promise.all(Array.from({length:n},async()=>{while(q.length){const it=q.shift();await fn(it);}}));}
+  async interpret(){const chair=this.byRole("chair");if(!chair)return;this.emit({type:"phase.started",phase:"interpret",round:0,memberIds:[chair.id]});
+    const r=await this.call(chair,"interpret",0,null,"preparing");this.interpretation=r.value;this.publish(chair,"interpretation","interpret",0,r);await sleep(250/this.s.speed,this.ac.signal);this.setState(chair.id,"idle");}
+  async independent(){const ms=this.contributors();this.emit({type:"phase.started",phase:"independent",round:0,memberIds:ms.map(m=>m.id)});
+    for(const m of ms)this.setState(m.id,"preparing");
+    await this.pool(ms,async m=>{const r=await this.call(m,"independent",0,null,"preparing");this.latest.set(m.id,r.value);this.initial.set(m.id,r.value);this.publish(m,"contribution","independent",0,r);await sleep(200/this.s.speed,this.ac.signal);this.setState(m.id,"idle");});
+    const a=this.roster.find(m=>m.role==="analyst"&&this.initial.has(m.id))||this.roster.find(m=>this.initial.has(m.id));this.initialAnswer=a?this.initial.get(a.id):null;}
+  async critiqueRound(round,focus){const ms=this.contributors().filter(m=>this.latest.has(m.id));this.emit({type:"phase.started",phase:"critique",round,memberIds:ms.map(m=>m.id),focus});
+    for(const m of ms)this.setState(m.id,"reviewing");
+    const challenges=[];
+    await this.pool(ms,async m=>{const others=ms.filter(o=>o.id!==m.id);if(!others.length)return;
+      const r=await this.call(m,"critique",round+(focus?focus.length:0),others,"reviewing");const set=r.value;this.critiques.push({from:m.id,round,set});
+      this.publish(m,"critique","critique",round,r,set.critiques.map(c=>c.targetMemberId));
+      for(const c of set.critiques){this.emit({type:"member.link",from:m.id,to:c.targetMemberId,stance:c.stance});if(c.stance==="challenge")challenges.push({from:m,target:c.targetMemberId,critique:c});}
+      await sleep(200/this.s.speed,this.ac.signal);
+      this.setState(m.id,set.critiques.some(c=>c.stance==="challenge")?"challenging":set.overall==="agree"?"agreeing":"idle");});
+    return challenges;}
+  async resolveRound(round,challenges){const by=new Map();for(const c of challenges)by.set(c.target,[...(by.get(c.target)||[]),c]);
+    const ms=[...by.keys()].map(id=>this.roster.find(m=>m.id===id)).filter(m=>m&&this.active(m)&&this.latest.has(m.id));if(!ms.length)return;
+    this.emit({type:"phase.started",phase:"resolve",round,memberIds:ms.map(m=>m.id)});
+    await this.pool(ms,async m=>{const rec=by.get(m.id);const r=await this.call(m,"resolve",round,null,"preparing");this.replies.push({member:m.id,round,reply:r.value});
+      if(r.value.response!=="defend"){const own=this.latest.get(m.id);this.latest.set(m.id,{...own,answer:r.value.updatedAnswer||own.answer});}
+      this.publish(m,"reply","resolve",round,r,[...new Set(rec.map(x=>x.from.id))]);
+      for(const x of rec)this.emit({type:"member.link",from:m.id,to:x.from.id,stance:"reply"});
+      await sleep(200/this.s.speed,this.ac.signal);this.setState(m.id,r.value.response==="defend"?"challenging":"agreeing");});}
+  async deliberate(){for(;;){if(this.ac.signal.aborted)throw new Stop();
+      const allowed=Math.min(LIMITS.maxRounds+this.extra,LIMITS.hardMaxRounds);if(this.round>=allowed)break;
+      if(this.contributors().filter(m=>this.latest.has(m.id)).length<2)break;
+      const round=++this.round;const focus=this.focus.shift()||null;const ch=await this.critiqueRound(round,focus);
+      if(ch.length)await this.resolveRound(round,ch);
+      if(!ch.length&&!this.focus.length&&this.extra===0)break;}}
+  async synthesize(){const syn=this.byRole("synthesizer");const latest=this.roster.filter(m=>this.latest.has(m.id));
+    if(!syn||!latest.length)throw new Error("No member was able to contribute, so the council has no answer.");
+    this.emit({type:"phase.started",phase:"synthesize",round:this.round,memberIds:[syn.id]});
+    const r=await this.call(syn,"synthesize",this.round,null,"preparing");this.publish(syn,"synthesis","synthesize",this.round,r,latest.map(m=>m.id));
+    this.emit({type:"session.final",final:r.value,initialAnswer:this.initialAnswer,synthesizerId:syn.id});await sleep(200/this.s.speed,this.ac.signal);this.setState(syn.id,"idle");}
+  async lifecycle(fn){this.busy=true;this.emit({type:"session.status",status:"running"});
+    try{await fn();this.emit({type:"session.status",status:"completed"});}
+    catch(e){if(e instanceof Stop){for(const m of this.roster)if(this.active(m))this.emit({type:"member.state",memberId:m.id,state:"idle"});this.emit({type:"session.status",status:"stopped"});}
+      else{this.emit({type:"session.status",status:"failed",error:e.message});}}
+    finally{this.busy=false;this.s.endedAt=Date.now();saveSessions();renderChronicle();renderControls();}}
+  start(){this.emit({type:"session.started",question:this.s.question,roster:this.roster,limits:LIMITS,simulated:true});
+    return this.lifecycle(async()=>{await this.interpret();await this.independent();await this.deliberate();await this.synthesize();});}
+  continueRun(){this.ac=new AbortController();return this.lifecycle(async()=>{await this.deliberate();await this.synthesize();});}
+  async direct(m,text){this.emit({type:"founder.action",action:"address",memberId:m.id,text});this.emit({type:"member.link",from:"prime",to:m.id,stance:"prime"});
+    const ac=new AbortController();const r=await (async()=>{this.setState(m.id,"preparing");await sleep((450+hash(text)%900)/this.s.speed,ac.signal);const out=demoOutput({phase:"direct",role:m.role,memberName:m.name,question:text},text.length);return{value:out,tokensIn:Math.ceil((text.length+600)/4),tokensOut:Math.ceil(JSON.stringify(out).length/4),latency:0};})();
+    this.publish(m,"direct","direct",this.round,r,["prime"]);await sleep(300,ac.signal);this.setState(m.id,this.busy?"idle":"idle");saveSessions();}
+}
+
+function newSession(question,meta){
+  const s={id:"s"+Date.now().toString(36),question,createdAt:new Date().toISOString(),startedAt:Date.now(),events:[],speed:1,simulated:true,excluded:[],
+    roster:members.map(m=>({...m,providerKind:"demo",providerLabel:"Demo (simulated)",simulated:true,sharesModelWith:members.filter(o=>o.id!==m.id).map(o=>o.id)})),...(meta||{})};
+  sessions.unshift(s);current=s;const run=new Run(s);runs.set(s.id,run);
+  run.start();renderAll();return s;
+}
+
+/* ---------- rendering: chamber ---------- */
+const PRIME={x:50,y:10},DAIS={x:50,y:44};
+function seatPositions(n){if(n===1)return[{x:50,y:82}];return Array.from({length:n},(_,i)=>{const t=Math.PI-(i*Math.PI)/(n-1);return{x:50+41*Math.cos(t),y:38+46*Math.sin(t)*.78+2};});}
+function curve(a,b){const cx=(a.x+b.x)/2+(DAIS.x-(a.x+b.x)/2)*.55,cy=(a.y+b.y)/2+(DAIS.y-(a.y+b.y)/2)*.55;return`M ${a.x} ${a.y} Q ${cx} ${cy} ${b.x} ${b.y}`;}
+function drawChamber(svg,speechEl,phaseEl,s,st){
+  const roster=s?s.roster:members;const pos={};seatPositions(roster.length).forEach((p,i)=>pos[roster[i].id]=p);pos.prime=PRIME;
+  let h=`<defs><radialGradient id="dais" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#8b7bff" stop-opacity=".35"/><stop offset="100%" stop-color="#8b7bff" stop-opacity="0"/></radialGradient></defs>`;
+  h+=`<ellipse cx="${DAIS.x}" cy="${DAIS.y}" rx="22" ry="11" fill="url(#dais)"/><ellipse cx="${DAIS.x}" cy="${DAIS.y}" rx="12" ry="5.5" fill="none" stroke="rgba(148,163,255,.25)" stroke-width=".3"/>`;
+  const seen=new Map();for(const l of (st?st.links:[]))if(pos[l.from]&&pos[l.to]&&l.from!==l.to)seen.set(l.from+">"+l.to,l);
+  for(const l of seen.values()){const c=STANCE[l.stance]||STANCE.reply;h+=`<path d="${curve(pos[l.from],pos[l.to])}" fill="none" stroke="${c.color}" stroke-width=".55" stroke-opacity=".9" class="flow"><title>${esc(memberName(l.from))} ${c.label} ${esc(memberName(l.to))}</title></path>`;}
+  // Founder
+  h+=`<g><circle cx="${PRIME.x}" cy="${PRIME.y}" r="4.4" fill="rgba(255,211,110,.14)" stroke="#ffd36e" stroke-width=".45"/><text x="${PRIME.x}" y="${PRIME.y+1.3}" font-size="3.6" text-anchor="middle" fill="#ffd36e" font-family="Space Grotesk">★</text><text x="${PRIME.x+6.2}" y="${PRIME.y+1}" font-size="2.3" fill="#ffd36e" font-weight="600">Founder (you)</text></g>`;
+  roster.forEach(m=>{const p=pos[m.id];const state=(st&&st.states[m.id])||(m.enabled?"idle":"offline");const meta=STATE_META[state];const off=state==="offline";const sp=st&&st.speaking===m.id;
+    h+=`<g class="seat" tabindex="0" role="button" data-seat="${m.id}" aria-label="${esc(m.name)}, ${ROLES[m.role].title}: ${meta.label}">`;
+    if(sp)h+=`<circle cx="${p.x}" cy="${p.y}" r="7.2" fill="none" stroke="#ffd36e" stroke-width=".5" class="pulse"/>`;
+    h+=`<circle class="ring" cx="${p.x}" cy="${p.y}" r="5.6" fill="${off?"#1a1f44":m.color}" fill-opacity="${off?1:.22}" stroke="${off?"#3a4170":m.color}" stroke-width=".45"/>`;
+    h+=`<text x="${p.x}" y="${p.y+1.4}" font-size="4" text-anchor="middle" font-weight="700" fill="${off?"#6b7299":m.color}" font-family="Space Grotesk">${esc(m.monogram)}</text>`;
+    h+=`<text x="${p.x}" y="${p.y+8.6}" font-size="2.4" text-anchor="middle" fill="#eef0ff" font-weight="600">${esc(m.name)}</text>`;
+    h+=`<text x="${p.x}" y="${p.y+11.4}" font-size="1.9" text-anchor="middle" fill="#a7aed8">${ROLES[m.role].glyph} ${ROLES[m.role].title}</text>`;
+    h+=`<g transform="translate(${p.x} ${p.y-7.3})"><rect x="-7" y="-1.75" width="14" height="3.5" rx="1.75" fill="rgba(7,10,26,.85)" stroke="${meta.color}" stroke-width=".25"/><text y=".75" font-size="1.9" text-anchor="middle" fill="${meta.color}">${meta.glyph} ${meta.label}</text></g>`;
+    h+=`</g>`;});
+  svg.innerHTML=h;
+  if(phaseEl){if(!st||!s)phaseEl.innerHTML="Waiting for the Founder";else{const label=st.status==="running"?(PHASE_LABEL[st.phase]||"Starting")+(st.round?` · round ${st.round}`:""):({completed:"Session complete",stopped:"Stopped by the Founder",failed:"Session failed"})[st.status]||st.status;phaseEl.innerHTML=`<b>${esc(label)}</b>`;}}
+  if(speechEl){if(st&&st.speech&&st.status==="running"){const who=st.speech.memberId==="prime"?{name:"Founder",color:"#ffd36e"}:memberOf(s,st.speech.memberId);speechEl.hidden=false;speechEl.innerHTML=`<div class="who" style="color:${who.color}">${esc(who.name)} · ${esc(KIND_LABEL[st.speech.kind]||st.speech.kind)}</div>${esc(st.speech.excerpt)}`;}else speechEl.hidden=true;}
+}
+
+/* ---------- rendering: transcript + outcome ---------- */
+function list(arr,empty){return arr&&arr.length?`<ul>${arr.map(x=>`<li>${esc(typeof x==="string"?x:x.claim||JSON.stringify(x))}</li>`).join("")}</ul>`:`<div class="faint">${empty}</div>`;}
+function msgHtml(s,e){const m=e.memberId==="prime"?{name:"Founder",color:"#ffd36e",role:"chair"}:memberOf(s,e.memberId);const c=e.content||{};let body="",more="";
+  switch(e.kind){
+    case "interpretation":body=c.restatement;more=`<b>Constraints</b>${list(c.constraints,"None")}<b>Success criteria</b>${list(c.successCriteria,"None")}`;break;
+    case "contribution":body=c.answer;more=`<b>Rationale</b><div>${esc(c.rationale)}</div><b>Evidence</b>${list(c.evidence,"No evidence checked (demo mode).")}<b>Assumptions</b>${list(c.assumptions,"None stated")}<div class="faint">Stated confidence ${Math.round((c.confidence||0)*100)}%</div>`;break;
+    case "critique":body=(c.critiques||[]).map(x=>`<span class="stance" style="color:${STANCE[x.stance].color}">${STANCE[x.stance].label}</span> ${esc(memberName(x.targetMemberId))}: ${esc(x.reason)}`).join("<br>")||"No critiques.";more=`<div>Overall: ${esc(c.overall)}</div>`;return wrap(true);
+    case "reply":body=`<span class="stance">${esc(c.response)}</span> · ${esc(c.updatedAnswer)}`;more=`<b>Reason</b><div>${esc(c.reason)}</div>`;return wrap(true);
+    case "synthesis":body=c.answer;more=`<b>Key evidence</b>${list(c.keyEvidence,"None")}<b>Uncertainty</b>${list(c.uncertainty,"None")}<b>Disagreements</b>${list(c.disagreements,"None preserved")}<b>How deliberation changed the answer</b><div>${esc(c.deliberationEffect)}</div>`;break;
+    case "direct":body=c.reply;break;}
+  return wrap(false);
+  function wrap(raw){return`<article class="msg" style="--c:${m.color}"><div class="meta"><b style="color:${m.color}">${esc(m.name)}</b><span>${esc(KIND_LABEL[e.kind])}</span><span>${esc(PHASE_LABEL[e.phase]||e.phase)}${e.round?` · round ${e.round}`:""}</span>${e.replyTo&&e.replyTo.length?`<span>→ ${e.replyTo.map(id=>esc(memberName(id))).join(", ")}</span>`:""}<span class="chip sim-badge">Simulated</span><span class="num">${e.tokensIn+e.tokensOut} tok · ${(e.latency/1000).toFixed(1)} s</span></div><p>${raw?body:esc(body)}</p>${more?`<details><summary>Rationale, evidence and assumptions</summary>${more}</details>`:""}</article>`;}
+}
+function renderTranscript(){const el=$("transcript");if(!current){el.innerHTML=`<div class="empty">No session yet.</div>`;return;}const st=reduce(current.events);
+  const founder=current.events.filter(e=>e.type==="founder.action");
+  const items=[...st.messages.map(e=>({t:e.t,h:msgHtml(current,e)})),...founder.map(e=>({t:e.t,h:`<article class="msg" style="--c:#ffd36e"><div class="meta"><b style="color:#ffd36e">Founder</b><span>${esc({stop:"Stopped the session",round:"Requested another round",challenge:"Challenged a claim",address:"Addressed "+memberName(e.memberId),exclude:"Excluded "+memberName(e.memberId),include:"Re-included "+memberName(e.memberId),override:"Overrode the decision"}[e.action]||e.action)}</span></div>${e.text?`<p>${esc(e.text)}</p>`:""}</article>`}))].sort((a,b)=>a.t-b.t);
+  el.innerHTML=items.length?items.map(x=>x.h).join(""):`<div class="empty">The council is gathering…</div>`;}
+function renderOutcome(){const el=$("outcome");if(!current){return;}const st=reduce(current.events);
+  $("sElapsed").textContent=((st.status==="running"?(Date.now()-current.startedAt):(current.endedAt?current.endedAt-current.startedAt:st.t))/1000).toFixed(1)+" s";
+  $("sCalls").textContent=st.calls;$("sTokens").textContent=(st.tin+st.tout).toLocaleString();$("sCost").textContent="$0.00";$("sCost").title="Demo provider: free and unpriced. Real sessions show an estimated cost against your budget.";
+  $("outcomeBadge").hidden=false;
+  if(!st.final){el.innerHTML=st.status==="stopped"?`<div class="empty">The Founder stopped this session before the Synthesizer answered.</div>`:`<div class="empty">Deliberating…</div>`;return;}
+  const ov=st.override?`<div class="answer final" style="margin-bottom:10px"><div class="label" style="color:var(--prime)">Founder override · the decision of record</div><p style="margin:4px 0 0">${esc(st.override)}</p></div>`:"";
+  el.innerHTML=ov+`<div class="compare"><div class="answer"><div class="label">Initial answer (Analyst, before critique)</div><p style="margin:4px 0 0">${esc(st.initial?st.initial.answer:"None")}</p></div><div class="answer final"><div class="label" style="color:var(--prime)">Final answer (Synthesizer)</div><p style="margin:4px 0 0">${esc(st.final.answer)}</p><div class="small faint" style="margin-top:6px">Confidence ${Math.round(st.final.confidence*100)}% · ${esc(st.final.uncertainty.join("; "))}</div></div></div>`+(current.worldProjectId?worldNote():"");
+}
+function worldNote(){const p=world&&world.projects.find(x=>x.id===current.worldProjectId);if(!p)return"";const open=p.status==="awaiting_council";
+  return`<div class="await" style="margin-top:10px"><b>World decision: ${esc(p.name)}</b><p class="small" style="margin:4px 0 8px">The council answered without a clear APPROVE/REJECT recommendation (simulated demo session), so the Founder decides.</p>${open?`<div class="row"><button class="btn sm primary" data-decide="approve" data-pid="${p.id}">Approve as Founder</button><button class="btn sm danger" data-decide="reject" data-pid="${p.id}">Reject as Founder</button></div>`:`<div class="small">Decided: <b>${esc(p.status)}</b></div>`}</div>`;}
+
+function renderControls(){const run=current&&runs.get(current.id);const st=current?reduce(current.events):null;const running=!!(run&&run.busy);const done=st&&st.status!=="running";const live=!!run;
+  $("cStop").disabled=!running;$("cRound").disabled=!live||(run&&Math.min(LIMITS.maxRounds+run.extra,LIMITS.hardMaxRounds)>=LIMITS.hardMaxRounds&&running)||(run&&run.round>=LIMITS.hardMaxRounds);
+  $("cChallenge").disabled=!live;$("cAddress").disabled=!live;$("cOverride").disabled=!(done&&st.final);$("askBtn").disabled=running;
+  $("ctrlHint").textContent=!current?"Start a session to use these.":!live?"Replayed sessions are read-only.":running?"The council is deliberating. You can step in at any time.":"Session finished. You can still ask for another round, challenge, address or override.";}
+
+function renderChamber(){const st=current?reduce(current.events):null;drawChamber($("chamberSvg"),$("speech"),$("phasePill"),current,st);}
+
+/* ---------- chronicle ---------- */
+let chronicle=store.get("pc.chronicle",[]);
+function addChron(glyph,text,color){chronicle.unshift({g:glyph,text,color,at:new Date().toISOString()});chronicle=chronicle.slice(0,80);store.set("pc.chronicle",chronicle);renderChronicle();}
+function renderChronicle(){const items=chronicle.slice(0,40);$("chronicle").innerHTML=items.length?items.map(c=>`<li><span class="g" style="color:${c.color||"var(--prime)"}" aria-hidden="true">${c.g}</span><div>${esc(c.text)}<time>${new Date(c.at).toLocaleString()}</time></div></li>`).join(""):`<li><span class="g">·</span><div class="muted">Nothing yet. Convene the council or run the world.</div></li>`;}
+
+/* ---------- events & render scheduling ---------- */
+let raf=0;function schedule(){if(raf)return;raf=requestAnimationFrame(()=>{raf=0;renderChamber();renderTranscript();renderOutcome();renderControls();});}
+function onEvent(s,e){if(e.type==="session.status"&&e.status==="completed"&&!s._chron){s._chron=1;addChron("✦",`The council answered "${short(s.question)}" (simulated session).`,"#ff8fcb");}
+  if(e.type==="session.status"&&e.status==="stopped")addChron("■","The Founder stopped a session.","#ffc857");
+  if(s===current)schedule();}
+setInterval(()=>{if(current&&runs.get(current.id)&&runs.get(current.id).busy)$("sElapsed").textContent=((Date.now()-current.startedAt)/1000).toFixed(1)+" s";},200);
+
+/* ---------- council interactions ---------- */
+const SAMPLES=["Should our town invest in a shared tool library this year?","What is the most useful thing the Primes could learn about this world first?","How should the council decide when its members disagree?"];
+$("samples").innerHTML=SAMPLES.map(q=>`<button type="button">${esc(q)}</button>`).join("");
+$("samples").addEventListener("click",e=>{const b=e.target.closest("button");if(b){$("askBox").value=b.textContent;$("askBox").focus();}});
+$("askBtn").addEventListener("click",()=>{const q=$("askBox").value.trim();if(!q){toast("Write a question for the council first.");$("askBox").focus();return;}if(!members.some(m=>m.enabled&&ROLES[m.role].contributes)){toast("Enable at least one contributing Prime on the Primes page.");return;}newSession(q);});
+$("cStop").addEventListener("click",()=>{if(!current)return;const r=runs.get(current.id);if(r&&r.busy){r.emit({type:"founder.action",action:"stop"});r.ac.abort();}});
+$("cRound").addEventListener("click",()=>{if(!current)return;const r=runs.get(current.id);if(!r)return;r.extra++;r.emit({type:"founder.action",action:"round"});if(!r.busy){if(r.round>=LIMITS.hardMaxRounds){toast("The hard limit of 3 rounds is reached.");return;}r.continueRun();}toast("Another round requested.");});
+$("cChallenge").addEventListener("click",()=>{$("challengeRow").hidden=!$("challengeRow").hidden;if(!$("challengeRow").hidden)$("challengeText").focus();});
+$("challengeGo").addEventListener("click",()=>{if(!current)return;const t=$("challengeText").value.trim();const r=runs.get(current.id);if(!t){$("challengeText").focus();return;}if(!r)return;
+  if(r.round>=LIMITS.hardMaxRounds){toast("The hard limit of 3 rounds is reached.");return;}
+  r.focus.push(t);r.extra++;r.emit({type:"founder.action",action:"challenge",text:t});for(const m of r.contributors())r.emit({type:"member.link",from:"prime",to:m.id,stance:"prime"});
+  $("challengeText").value="";$("challengeRow").hidden=true;if(!r.busy)r.continueRun();toast("Challenge sent. The Primes will re-examine it in the next round.");});
+$("cAddress").addEventListener("click",()=>openSeat(null));
+$("cOverride").addEventListener("click",()=>{const st=reduce(current.events);openDrawer(`<h2 id="drawerTitle">Override the decision</h2><p class="small muted">Your decision becomes the decision of record. The council's answer stays visible next to it.</p><textarea class="ask" id="ovText" placeholder="Your decision and reason">${esc(st.override||"")}</textarea><div class="row" style="justify-content:flex-end;margin-top:10px"><button class="btn" data-close>Cancel</button><button class="btn prime" id="ovSave">Record override</button></div>`);
+  $("ovSave").addEventListener("click",()=>{const t=$("ovText").value.trim();if(!t){$("ovText").focus();return;}runs.get(current.id).emit({type:"founder.action",action:"override",text:t});addChron("★",`The Founder overrode the council: "${short(t)}"`,"#ffd36e");saveSessions();closeDrawer();});});
+
+function openSeat(id){const run=current&&runs.get(current.id);const st=current?reduce(current.events):null;
+  const pick=id?[members.find(m=>m.id===id)]:members.filter(m=>m.enabled);
+  const m=pick[0];if(!m)return;const ex=current&&current.excluded.includes(m.id);
+  openDrawer(`<div class="row" style="gap:10px"><div class="av" style="background:${m.color}">${esc(m.monogram)}</div><div><h2 id="drawerTitle">${esc(m.name)}</h2><div class="small muted">${ROLES[m.role].glyph} ${ROLES[m.role].title} · ${ROLES[m.role].summary}</div></div></div>
+  <p class="small" style="margin:10px 0">${esc(m.persona)}</p><div class="small faint">Provider: Demo (simulated) · model demo-simulated · state: ${STATE_META[(st&&st.states[m.id])||"idle"].label}</div>
+  ${run?`<label class="label" for="addrWho" style="display:block;margin-top:12px">Address</label><div class="row"><select class="text" id="addrWho">${members.filter(x=>x.enabled).map(x=>`<option value="${x.id}" ${x.id===m.id?"selected":""}>${esc(x.name)} · ${ROLES[x.role].title}</option>`).join("")}</select></div>
+  <textarea class="ask" id="addrText" style="margin-top:8px" placeholder="Your message to this Prime"></textarea>
+  <div class="row" style="justify-content:space-between;margin-top:10px"><button class="btn ${ex?"":"danger"}" id="exBtn">${ex?"Re-include in this session":"Exclude from this session"}</button><div class="row"><button class="btn" data-close>Close</button><button class="btn prime" id="addrSend">Send</button></div></div>`:`<p class="small muted">Start or open a live session to address or exclude this Prime.</p><div class="row" style="justify-content:flex-end"><button class="btn" data-close>Close</button></div>`}`);
+  if(!run)return;
+  $("addrWho").addEventListener("change",e=>openSeat(e.target.value));
+  $("exBtn").addEventListener("click",()=>{const on=current.excluded.includes(m.id);if(on){current.excluded=current.excluded.filter(x=>x!==m.id);run.emit({type:"founder.action",action:"include",memberId:m.id});}else{current.excluded.push(m.id);run.emit({type:"founder.action",action:"exclude",memberId:m.id});}saveSessions();closeDrawer();});
+  $("addrSend").addEventListener("click",()=>{const t=$("addrText").value.trim();if(!t){$("addrText").focus();return;}const who=members.find(x=>x.id===$("addrWho").value);if(current.excluded.includes(who.id)){toast(`${who.name} is excluded from this session.`);return;}closeDrawer();run.direct(who,t).catch(()=>{});});
+}
+function openDrawer(html){const d=$("drawer");d.innerHTML=html;d.hidden=false;const f=d.querySelector("textarea,input,select,button");if(f)f.focus();}
+function closeDrawer(){$("drawer").hidden=true;}
+$("drawer").addEventListener("click",e=>{if(e.target.closest("[data-close]"))closeDrawer();});
+document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!$("drawer").hidden)closeDrawer();});
+$("chamberSvg").addEventListener("click",e=>{const g=e.target.closest("[data-seat]");if(g)openSeat(g.dataset.seat);});
+$("chamberSvg").addEventListener("keydown",e=>{const g=e.target.closest("[data-seat]");if(g&&(e.key==="Enter"||e.key===" ")){e.preventDefault();openSeat(g.dataset.seat);}});
+
+/* ---------- sessions tab + replay ---------- */
+function renderSessions(){const el=$("sessionList");if(!sessions.length){el.innerHTML=`<div class="empty">No sessions yet. Convene the council on the Council tab.</div>`;return;}
+  el.innerHTML=sessions.map(s=>{const st=reduce(s.events);return`<div class="sitem"><div class="q"><div style="font-weight:600">${esc(short(s.question))}</div><div class="small faint">${new Date(s.createdAt).toLocaleString()} · ${st.calls} calls · ${esc(st.status)}${s.worldProjectId?" · world decision":""}</div></div><span class="chip sim-badge">Simulated</span><div class="row"><button class="btn sm" data-open="${s.id}">Open</button><button class="btn sm" data-replay="${s.id}">Replay</button></div></div>`;}).join("");}
+$("sessionList").addEventListener("click",e=>{const o=e.target.closest("[data-open]"),r=e.target.closest("[data-replay]");
+  if(o){current=sessions.find(s=>s.id===o.dataset.open);showTab("council");renderAll();}
+  if(r)startReplay(sessions.find(s=>s.id===r.dataset.replay));});
+let replay=null;
+function startReplay(s){replay={s,i:0,timer:0};$("replay").hidden=false;$("replayTitle").textContent="Replay: "+short(s.question);$("replaySlider").max=s.events.length;$("replaySlider").value=0;drawReplay();$("replay").scrollIntoView({behavior:"smooth",block:"start"});}
+function drawReplay(){const {s,i}=replay;const st=reduce(s.events,i);drawChamber($("replaySvg"),$("rSpeech"),$("rPhase"),s,{...st,status:i<s.events.length?"running":st.status});
+  $("replayPos").textContent=`${i} / ${s.events.length}`;$("replaySlider").value=i;$("replayMsgs").innerHTML=st.messages.slice(-4).map(e=>msgHtml(s,e)).join("");}
+$("replaySlider").addEventListener("input",e=>{if(!replay)return;replay.i=+e.target.value;drawReplay();});
+$("replayPlay").addEventListener("click",()=>{if(!replay)return;if(replay.timer){clearInterval(replay.timer);replay.timer=0;$("replayPlay").textContent="Play";return;}
+  if(replay.i>=replay.s.events.length)replay.i=0;$("replayPlay").textContent="Pause";replay.timer=setInterval(()=>{replay.i++;drawReplay();if(replay.i>=replay.s.events.length){clearInterval(replay.timer);replay.timer=0;$("replayPlay").textContent="Play";}},120);});
+$("replayClose").addEventListener("click",()=>{if(replay&&replay.timer)clearInterval(replay.timer);replay=null;$("replay").hidden=true;});
+
+/* ---------- primes tab ---------- */
+function renderPrimes(){$("primeCards").innerHTML=members.map(m=>`<div class="card"><div class="row" style="gap:10px"><div class="av" style="background:${m.color}">${esc(m.monogram)}</div><div style="flex:1"><div style="font-weight:600">${esc(m.name)}</div><div class="small muted">${ROLES[m.role].glyph} ${ROLES[m.role].title}</div></div><label class="switch"><input type="checkbox" data-toggle="${m.id}" ${m.enabled?"checked":""} aria-label="${esc(m.name)} enabled">${m.enabled?"On":"Off"}</label></div>
+  <div class="small">${esc(m.persona)}</div><div class="small faint">${esc(ROLES[m.role].summary)}</div><div class="row small"><span class="chip sim-badge">Demo</span><span class="faint">Demo (simulated) · demo-simulated</span></div><div class="small" style="color:var(--warn)">Shares a model with ${members.filter(o=>o.id!==m.id).length} other Primes</div></div>`).join("");
+  const prov=[["Demo (simulated)","demo","Built in. No model is called.","demo"],["Anthropic","anthropic","ANTHROPIC_API_KEY","not configured"],["OpenAI","openai","OPENAI_API_KEY","not configured"],["Google Gemini","google","GEMINI_API_KEY","not configured"],["Ollama (local)","ollama","OLLAMA_BASE_URL","not configured"],["OpenAI-compatible endpoint","openai_compatible","OPENAI_COMPAT_BASE_URL","not configured"]];
+  $("provTable").innerHTML=`<thead><tr><th>Provider</th><th>Kind</th><th>Configured by</th><th>Status</th></tr></thead><tbody>${prov.map(p=>`<tr><td>${p[0]}</td><td class="faint">${p[1]}</td><td class="faint">${p[2]}</td><td><span class="chip ${p[3]==="demo"?"sim-badge":""}">${p[3]}</span></td></tr>`).join("")}</tbody>`;}
+$("primeCards").addEventListener("change",e=>{const id=e.target.dataset.toggle;if(!id)return;const m=members.find(x=>x.id===id);m.enabled=e.target.checked;store.set("pc.members",members);renderPrimes();renderChamber();toast(`${m.name} is ${m.enabled?"on":"off"} for new sessions.`);});
+
+/* ---------- world (real engine) ---------- */
+const LOC_STYLE={hall:{fill:"#ffd36e",glyph:"✦"},market:{fill:"#5cc8ff",glyph:"¤"},farm:{fill:"#3ddc97",glyph:"❦"},forest:{fill:"#8bd450",glyph:"▲"},workshop:{fill:"#ffb15c",glyph:"⚒"},home:{fill:"#c4a1ff",glyph:"⌂"},library:{fill:"#ff8fcb",glyph:"✎"},granary:{fill:"#e9c46a",glyph:"◫"},site:{fill:"#b79cff",glyph:"▦"}};
+const ACTION_META={working:{label:"Working",glyph:"⚒"},building:{label:"Building",glyph:"▲"},studying:{label:"Studying",glyph:"✎"},trading:{label:"Trading",glyph:"¤"},eating:{label:"Eating",glyph:"●"},resting:{label:"Resting",glyph:"z"},idle:{label:"Idle",glyph:"·"},hungry:{label:"Hungry",glyph:"!"}};
+const STATUS_COLOR={proposed:"#a7aed8",awaiting_council:"#ffd36e",approved:"#5cc8ff",active:"#4ade9a",done:"#4ade9a",rejected:"#ff6b7a"};
+let world=null,wFeed=[],wSel=null,wTimer=0;
+function primesForWorld(){return members.filter(m=>m.enabled).map(m=>({id:m.id,name:m.name}));}
+function newWorld(){const r=createWorld(42,DEFAULT_WORLD_CONFIG,"Ember Hollow",primesForWorld());world=r.state;wFeed=r.events.map(e=>({tick:e.tick,text:e.text,type:e.type}));for(const e of r.events)chronFromWorld(e);saveWorld();}
+function saveWorld(){store.set("pc.world",{state:world,feed:wFeed.slice(0,120)});}
+function loadWorld(){const w=store.get("pc.world",null);if(w&&w.state&&w.state.version===1){world=w.state;wFeed=w.feed||[];}else newWorld();}
+function chronFromWorld(e){const map={"world.created":["✦","#ffd36e"],"council.decision":["⚖","#ffd36e"],"project.completed":["▲","#4ade9a"],"inhabitant.arrived":["+","#5cc8ff"],"project.council_needed":["?","#ffc857"]};const m=map[e.type];if(m)addChron(m[0],`${world?world.name:"Ember Hollow"}: ${e.text}`,m[1]);}
+function stepWorld(){const r=step(world);world=r.state;for(const e of r.events){if(e.type!=="tick.summary")wFeed.unshift({tick:e.tick,text:e.text,type:e.type});chronFromWorld(e);}wFeed=wFeed.slice(0,120);saveWorld();renderWorld();}
+function decideWorld(pid,decision,sessionId){try{const p=world.projects.find(x=>x.id===pid);const r=decide(world,pid,decision,{by:"prime",sessionId:sessionId||null,reason:sessionId?"The council session was simulated, so the Founder decided.":"Decided by the Founder."});world=r.state;for(const e of r.events){wFeed.unshift({tick:e.tick,text:e.text,type:e.type});chronFromWorld(e);}saveWorld();renderWorld();if(current)renderOutcome();toast(`${p.name}: ${decision==="approve"?"approved":"rejected"}.`);}catch(err){toast(err.message);}}
+function renderWorld(){if(!world)return;const s=world;$("wName").textContent=s.name;
+  const cents=s.treasury.cents;const pop=s.inhabitants.length;const shift=["Morning","Afternoon","Evening"][s.tick%3];
+  $("wStats").innerHTML=[["Day",`${dayOf(s.tick)} · ${shift}`],["Agents",pop],["Treasury",credits(cents)+" cr"],["Food",s.treasury.stock.food],["Wood · Tools",`${s.treasury.stock.wood} · ${s.treasury.stock.tools}`],["Knowledge",s.treasury.stock.knowledge]].map(([k,v])=>`<div class="stat"><div class="label">${k}</div><div class="v">${esc(v)}</div></div>`).join("");
+  drawWorldMap();
+  const aw=s.projects.filter(p=>p.status==="awaiting_council");
+  $("awaitBox").innerHTML=aw.map(p=>{const sess=sessions.find(x=>x.worldProjectId===p.id);return`<div class="await grid" style="gap:6px"><div class="row" style="justify-content:space-between"><b>${esc(p.name)} needs a decision</b><span class="status" style="color:var(--prime)">Awaiting council</span></div><div class="small">${esc(p.rationale)} Cost ${credits(p.costCents)} credits.</div><div class="row"><button class="btn sm prime" data-askcouncil="${p.id}">${sess?"Open council session":"Ask the council"}</button><button class="btn sm primary" data-decide="approve" data-pid="${p.id}">Approve</button><button class="btn sm danger" data-decide="reject" data-pid="${p.id}">Reject</button></div></div>`;}).join("");
+  $("wProjects").innerHTML=s.projects.length?s.projects.slice().reverse().map(p=>`<div class="proj"><div class="row" style="justify-content:space-between"><b>${esc(p.name)}</b><span class="status" style="color:${STATUS_COLOR[p.status]}">${esc(p.status.replace("_"," "))}</span></div><div class="small faint">${credits(p.costCents)} cr · ${p.workRequired} work${p.decidedBy?` · decided by ${({council:"the council",prime:"the Founder",rules:"community rules"})[p.decidedBy]||p.decidedBy}`:""}</div>${p.status==="active"||p.status==="done"?`<div class="bar2"><i style="width:${Math.round(100*Math.min(1,p.progress/p.workRequired))}%"></i></div>`:""}</div>`).join(""):`<div class="small muted">No projects yet. Agents propose them as the town grows.</div>`;
+  $("wFeed").innerHTML=wFeed.slice(0,60).map(e=>`<li><span class="num">D${dayOf(e.tick)}</span>${esc(e.text)}</li>`).join("");
+  $("inhTable").innerHTML=`<thead><tr><th>Agent</th><th>Role</th><th>Doing</th><th class="num">Credits</th><th class="num">Energy</th><th class="num">Hunger</th></tr></thead><tbody>${s.inhabitants.map(i=>`<tr data-inh="${i.id}" style="cursor:pointer;${wSel===i.id?"background:rgba(255,211,110,.08)":""}"><td><span style="color:${i.color}">●</span> ${esc(i.name)}</td><td class="faint">${esc(i.role)}</td><td>${ACTION_META[i.action.kind].glyph} ${esc(i.action.detail)}</td><td class="num">${credits(i.cents)}</td><td class="num">${Math.round(i.energy)}</td><td class="num">${Math.round(i.hunger)}</td></tr>`).join("")}</tbody>`;
+  const sel=s.inhabitants.find(i=>i.id===wSel);
+  $("inhDetail").innerHTML=sel?`<div class="proj"><div class="row" style="justify-content:space-between"><b style="color:${sel.color}">${esc(sel.name)} · ${esc(sel.role)}</b><button class="btn sm" data-unsel>Close</button></div><div class="small">Goal: ${esc(sel.goal)}</div><div class="small faint">Now: ${esc(sel.action.detail)} · skill ${sel.skill.toFixed(2)} · inventory ${Object.entries(sel.inventory).map(([k,v])=>`${k} ${Math.round(v*10)/10}`).join(", ")}</div></div>`:"";
+}
+function drawWorldMap(){const s=world;const loc=new Map(s.locations.map(l=>[l.id,l]));const groups=new Map();
+  for(const i of s.inhabitants){const id=loc.has(i.action.locationId)?i.action.locationId:i.homeId;groups.set(id,[...(groups.get(id)||[]),i]);}
+  const pos=new Map();for(const[lid,list]of groups){const l=loc.get(lid);if(!l)continue;list.forEach((inh,k)=>{const a=(k/Math.max(1,list.length))*Math.PI*2-Math.PI/2;const r=list.length===1?0:2.6+list.length*.55;pos.set(inh.id,{x:l.x+Math.cos(a)*r+4.5,y:l.y+Math.sin(a)*r*.9-3.5});});}
+  const hall=loc.get("loc_hall");const active=s.projects.find(p=>p.status==="active");
+  let h=`<defs><radialGradient id="land" cx="50%" cy="45%" r="70%"><stop offset="0%" stop-color="#1d2a52"/><stop offset="100%" stop-color="#0b1030"/></radialGradient><linearGradient id="river" x1="0" x2="1"><stop offset="0%" stop-color="#3b82f6" stop-opacity=".55"/><stop offset="100%" stop-color="#5cc8ff" stop-opacity=".35"/></linearGradient></defs>
+  <rect x="0" y="0" width="100" height="64" rx="3" fill="url(#land)"/><path d="M -2 50 C 12 46, 18 58, 30 56 S 52 62, 70 60 S 92 54, 104 58" fill="none" stroke="url(#river)" stroke-width="2.6" stroke-linecap="round"/>`;
+  for(let k=0;k<16;k++)h+=`<path d="M ${76+(k%6)*3.6} ${6+Math.floor(k/6)*4.5} l 1.3 2.6 h -2.6 z" fill="#8bd450" opacity=".35"/>`;
+  for(let k=0;k<5;k++)h+=`<line x1="10" y1="${40+k*1.6}" x2="22" y2="${40+k*1.6}" stroke="#3ddc97" stroke-opacity=".25" stroke-width=".6"/>`;
+  if(hall)for(const l of s.locations)if(l.id!==hall.id)h+=`<line x1="${hall.x+4.5}" y1="${hall.y}" x2="${l.x+4.5}" y2="${l.y}" stroke="#a7aed8" stroke-opacity=".16" stroke-width=".5" stroke-dasharray="1 1.2"/>`;
+  for(const l of s.locations){const st=LOC_STYLE[l.kind]||LOC_STYLE.home;const site=l.kind==="site";
+    h+=`<g><rect x="${l.x}" y="${l.y-2.6}" width="9" height="5.2" rx="1.2" fill="${st.fill}" fill-opacity="${site&&!active?.08:.18}" stroke="${st.fill}" stroke-opacity="${site&&!active?.3:.7}" stroke-width=".3" ${site?'stroke-dasharray=".8 .6"':""}/><text x="${l.x+1.6}" y="${l.y+1}" font-size="2.6" fill="${st.fill}" aria-hidden="true">${st.glyph}</text><text x="${l.x+4.5}" y="${l.y+5.2}" font-size="1.9" text-anchor="middle" fill="#cdd3f5">${esc(site&&active?`${active.name} ${Math.round(active.progress/active.workRequired*100)}%`:l.name)}</text></g>`;}
+  for(const i of s.inhabitants){const p=pos.get(i.id)||{x:50,y:30};const a=ACTION_META[i.action.kind]||ACTION_META.idle;const sel=wSel===i.id;
+    h+=`<g transform="translate(${p.x.toFixed(2)} ${p.y.toFixed(2)})" role="button" tabindex="0" data-inh="${i.id}" aria-label="${esc(i.name)}, ${esc(i.role)}: ${a.label}" style="cursor:pointer"><title>${esc(i.name)} (${esc(i.role)}) — ${esc(i.action.detail)}</title>${sel?`<circle r="3" fill="none" stroke="#ffd36e" stroke-width=".45"/>`:""}<circle r="2.1" fill="${i.color}" stroke="${i.action.kind==="hungry"?"#ff6b7a":"#0a0d24"}" stroke-width="${i.action.kind==="hungry"?.5:.3}"/><text y=".75" font-size="2.1" text-anchor="middle" font-weight="700" fill="#0a0d24">${esc(i.name[0])}</text><g transform="translate(1.7,-1.9)"><circle r=".95" fill="#0d1230" stroke="${i.color}" stroke-width=".2"/><text y=".45" font-size="1.2" text-anchor="middle" fill="#eef0ff">${a.glyph}</text></g></g>`;}
+  $("worldSvg").innerHTML=h;}
+function setRun(on){if(on&&!wTimer){wTimer=setInterval(stepWorld,+$("wSpeed").value);$("wRun").textContent="Pause";}else if(!on&&wTimer){clearInterval(wTimer);wTimer=0;$("wRun").textContent="Run";}}
+$("wRun").addEventListener("click",()=>setRun(!wTimer));
+$("wStep").addEventListener("click",()=>{setRun(false);stepWorld();});
+$("wSpeed").addEventListener("change",()=>{if(wTimer){setRun(false);setRun(true);}});
+$("wReset").addEventListener("click",()=>{openDrawer(`<h2 id="drawerTitle">Start a new world?</h2><p class="small muted">This replaces Ember Hollow in this browser with a freshly founded town. Your council sessions are kept.</p><div class="row" style="justify-content:flex-end"><button class="btn" data-close>Keep this world</button><button class="btn danger" id="resetGo">Start a new world</button></div>`);$("resetGo").addEventListener("click",()=>{setRun(false);newWorld();wSel=null;renderWorld();closeDrawer();toast("A new Ember Hollow has been founded.");});});
+document.addEventListener("click",e=>{const d=e.target.closest("[data-decide]");if(d){const sess=current&&current.worldProjectId===d.dataset.pid?current.id:null;decideWorld(d.dataset.pid,d.dataset.decide,sess);}
+  const a=e.target.closest("[data-askcouncil]");if(a){const pid=a.dataset.askcouncil;const ex=sessions.find(x=>x.worldProjectId===pid);if(ex){current=ex;}else{const p=world.projects.find(x=>x.id===pid);newSession(councilQuestion(world,p),{worldProjectId:pid});}showTab("council");renderAll();window.scrollTo({top:0,behavior:"smooth"});}
+  const i=e.target.closest("[data-inh]");if(i){wSel=wSel===i.dataset.inh?null:i.dataset.inh;renderWorld();}
+  if(e.target.closest("[data-unsel]")){wSel=null;renderWorld();}});
+$("worldSvg").addEventListener("keydown",e=>{const g=e.target.closest("[data-inh]");if(g&&(e.key==="Enter"||e.key===" ")){e.preventDefault();wSel=g.dataset.inh;renderWorld();}});
+
+/* ---------- tabs ---------- */
+function showTab(t){document.querySelectorAll("nav.tabs button").forEach(b=>b.setAttribute("aria-current",b.dataset.tab===t?"page":"false"));
+  for(const id of ["council","sessions","world","primes"])$("tab-"+id).hidden=id!==t;
+  if(t==="sessions")renderSessions();if(t==="world")renderWorld();if(t==="primes")renderPrimes();
+  try{history.replaceState(null,"","#"+t);}catch(e){}}
+document.querySelector("nav.tabs").addEventListener("click",e=>{const b=e.target.closest("button[data-tab]");if(b)showTab(b.dataset.tab);});
+
+function renderAll(){renderChamber();renderTranscript();renderOutcome();renderControls();renderChronicle();}
+// Sessions restored from storage are read-only (no live run).
+if(sessions.length)current=sessions[0];
+loadWorld();
+renderAll();
+const start=(location.hash||"").replace("#","");showTab(["council","sessions","world","primes"].includes(start)?start:"council");
+})();
+</script>
+</body>
+</html>
