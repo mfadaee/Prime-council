@@ -1,0 +1,32 @@
+name: Feature request
+description: Suggest an improvement to the council, the world or the tooling.
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: Check docs/ROADMAP.md and docs/BACKLOG.md first; your idea may already be planned.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or goal
+      description: What are you trying to do, and what gets in the way today?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed change
+      description: What should Prime Council do? Mention the page (/, /members, /world, /memory, /settings) if relevant.
+    validations:
+      required: true
+  - type: textarea
+    id: limits
+    attributes:
+      label: Limits and safety
+      description: Does it call models, spend money, run in the background or change the world? How should limits apply? (Limits must be enforced in code, not prompts.)
+  - type: checkboxes
+    id: help
+    attributes:
+      label: Contribution
+      options:
+        - label: I'd like to open a pull request for this (see CONTRIBUTING.md).

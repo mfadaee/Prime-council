@@ -1,9 +1,13 @@
 # Prime Council
 
+[![CI](https://github.com/mfadaee/Prime-council/actions/workflows/ci.yml/badge.svg)](https://github.com/mfadaee/Prime-council/actions/workflows/ci.yml)
+
 > ### ▶ [Try the live demo](https://mfadaee.github.io/Prime-council/)
 > Runs in your browser with no setup or keys: watch the Primes deliberate, step in as the Founder, and run the world simulation. All council output in the demo is simulated (no model is called); the world uses the app's real engine.
 
 **A prime council that builds intelligence from scratch.**
+
+A local-first web app for **multi-model LLM deliberation**: Claude, GPT, Gemini and local (Ollama) models answer, critique each other and resolve as a council while you watch and steer. Runs in a keyless demo mode out of the box.
 
 You are **the Founder**. The council is made of **Primes**, one agent for each AI model you connect: Claude, GPT, Gemini, local models and others. Under a charter you set, the Primes:
 - deliberate together;
@@ -139,6 +143,37 @@ The core flow:
 
 More detail in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md). Providers are covered in [docs/PROVIDERS.md](docs/PROVIDERS.md).
 
+## Tech stack
+
+| Layer | What it uses |
+|---|---|
+| App | [Next.js](https://nextjs.org) 16 (App Router, route handlers, Server-Sent Events), React 19, TypeScript |
+| UI | Tailwind CSS 4, [Motion](https://motion.dev) for chamber and world-map animation |
+| Data | PostgreSQL via [Drizzle ORM](https://orm.drizzle.team); embedded [PGlite](https://pglite.dev) by default, `pg` for a real server |
+| Models | Anthropic SDK for Claude; plain HTTP adapters for OpenAI (Responses API), Gemini, OpenAI-compatible servers and Ollama; a labelled demo provider |
+| Validation | [Zod](https://zod.dev) schemas for model output, API input and settings |
+| Tests | Vitest (unit, optional real-PostgreSQL integration), Playwright (desktop + mobile e2e) |
+| CI | GitHub Actions: lint, typecheck, unit tests, build, e2e |
+
+Requires Node.js ≥ 20.9. Version `0.1.0`, pre-release: the milestones in [docs/ROADMAP.md](docs/ROADMAP.md) are marked Done, Partial or Planned.
+
+## Roadmap
+
+| Milestone | Status |
+|---|---|
+| 1 · Council MVP: chamber, bounded pipeline, five provider adapters + demo, Prime controls, budgets, replay | Done |
+| 2 · Persistent intelligence: member configuration, inspectable memory, suggested and background sessions | Done |
+| 3 · Living society: deterministic world, fictional economy, projects, council docket | Done |
+| 4 · Continuous improvement: CI, daily improvement job, `/improvements` history | Done |
+| Prime Council direction: Founder / Primes / agents, charter, Chronicle, Prime governance | Done (first slice) |
+| Later: agents at scale, Prime-proposed world rules, research tools, multi-process event bus, token streaming | Planned |
+
+Details and known gaps are in [docs/ROADMAP.md](docs/ROADMAP.md); the next small items are in [docs/BACKLOG.md](docs/BACKLOG.md).
+
+## Contributing
+
+Contributions are welcome, from people and from coding agents alike. Read [CONTRIBUTING.md](CONTRIBUTING.md) for the workflow and the architecture rules (limits live in code, one reducer for the chamber, simulation is always labelled). Items marked **low/auto** in [docs/BACKLOG.md](docs/BACKLOG.md) are small and self-contained, a good place to start.
+
 ## Security model
 
 - **Local-first.** Servers bind to `127.0.0.1`, and the proxy refuses requests addressed to any non-loopback host unless `SIMLIFE_ACCESS_TOKEN` is set. This also defeats DNS rebinding.
@@ -157,6 +192,9 @@ More detail in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md). Providers are cover
 - [docs/PROVIDERS.md](docs/PROVIDERS.md) — provider integration
 - [docs/DAILY_IMPROVEMENT.md](docs/DAILY_IMPROVEMENT.md) — the daily coding workflow. **Inactive until set up.**
 - [CONTRIBUTING.md](CONTRIBUTING.md) — contribution rules
+- [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) — how we treat each other
+- [SECURITY.md](SECURITY.md) — how to report a vulnerability privately
+- [CHANGELOG.md](CHANGELOG.md) — what changed, by milestone
 
 ## Remote access
 
