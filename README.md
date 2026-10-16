@@ -19,11 +19,31 @@ See [docs/VISION.md](docs/VISION.md) for the full vision.
 
 ## Live demo (GitHub Pages)
 
+[![Six Primes deliberating in the live demo: the Chair interprets, four Primes answer and challenge each other, then the Synthesizer writes the answer](docs/media/council.gif)](https://mfadaee.github.io/Prime-council/)
+
+<sub>Recorded from the live demo. All council text in the demo is simulated (no model is called). More: [session view](docs/media/session.png) · [world map](docs/media/world.png).</sub>
+
 [`index.html`](index.html) is a self-contained demo served by GitHub Pages from `main` (root). It ports the demo provider and the council flow to the browser and inlines the real world engine from `src/lib/sim`. After changing the engine, run `node scripts/build-pages-demo.mjs` to refresh the copy in the page.
 
 ## Quick start
 
-Requires Node.js ≥ 20.9.
+**With Docker** (nothing else to install):
+
+```bash
+git clone https://github.com/mfadaee/prime-council && cd prime-council
+docker compose up --build    # http://localhost:3000 — demo mode, no keys needed
+```
+
+Data is kept in the `prime-data` volume. To use real models, put keys in `.env.local` (below) and run the same command. Inside the container, a model server on your machine is `http://host.docker.internal:<port>`, not `localhost`.
+
+**In a dev container** (VS Code or GitHub Codespaces):
+
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/mfadaee/prime-council)
+
+VS Code: open the folder and choose **Reopen in Container**. The container installs dependencies, starts `npm run dev:demo` and forwards port 3000 (demo mode, no keys).
+In Codespaces the forwarded port is private to your GitHub account. If the page says *"Prime Council is local-only"*, the forwarded request did not arrive as `localhost`: add `SIMLIFE_ACCESS_TOKEN=<long random value>` (`openssl rand -hex 32`) to `.env.local` in the codespace, restart `npm run dev:demo`, and sign in at `/login`. The access check is never loosened for Codespaces.
+
+**With Node.js** ≥ 20.9:
 
 ```bash
 npm install
@@ -106,7 +126,69 @@ With no provider configured, every seat uses the built-in **demo provider**:
 
 **Improvements** (`/improvements`): the history of changes, with purpose, validation and remaining issues, plus the status of the daily improvement job.
 
+## How it compares
+
+Several good open-source projects put more than one model, or many agents, to work together. Prime Council takes ideas from them and combines them in one local app. Pick the one that fits what you want to do.
+
+| Project | What it is | How Prime Council differs |
+|---|---|---|
+| [karpathy/llm-council](https://github.com/karpathy/llm-council) | A small web app: several models answer through OpenRouter, review and rank each other's answers anonymously, then a "chairman" model writes the final answer. Its author calls it a weekend hack ([write-up](https://www.analyticsvidhya.com/blog/2025/12/llm-council-by-andrej-karpathy/)). | Same council idea, plus: direct provider adapters (Anthropic, OpenAI, Gemini, Ollama, any OpenAI-compatible server), a keyless demo mode, controls while the council deliberates (stop, challenge, address one member, override), replay, spending limits enforced in code, and persistent memory. |
+| [Mixture-of-Agents](https://www.together.ai/blog/together-moa) (Together AI) | A research method and reference code: layers of "proposer" models whose answers an "aggregator" model combines into one. | MoA is a technique to raise answer quality. Prime Council is an application you watch and steer, with critique and resolve rounds you can see. |
+| [a16z-infra/ai-town](https://github.com/a16z-infra/ai-town) | An MIT-licensed starter kit for a virtual town where AI characters live and chat, inspired by the *Generative Agents* paper. Runs on Convex, with Ollama by default. | Prime Council's world is a deterministic economy that you can snapshot and replay. Its projects go to a council of real models for decisions, rather than being a chat sandbox. |
+| Agent frameworks (AutoGen, CrewAI, LangGraph…) | Libraries for building your own multi-agent pipelines in code. | Prime Council is a finished app, not a framework. You configure it in the UI; you don't write orchestration code. |
+
+The comparison reflects each project's public description at the time of writing. Corrections are welcome: open an issue or PR.
+
+## FAQ
+
+**Do I need API keys to try it?** No. With no keys, every seat uses the built-in demo provider. The full pipeline runs, and its output is labelled **Simulated**. Add keys later in `.env.local`.
+
+**Which models does it support?** Anthropic, OpenAI and Google Gemini directly; local models through Ollama; and anything that speaks the OpenAI `/v1/chat/completions` API (vLLM, LM Studio, llama.cpp, OpenRouter…). See [docs/PROVIDERS.md](docs/PROVIDERS.md).
+
+**Can it run up a big bill?** Before each model call, the app reserves the call's worst-case estimated cost. It refuses the call if that would pass the per-session or daily limit, which also covers calls running in parallel. By default it refuses models that have no price in Settings. Costs are estimates, so this limits how much new work starts; it is not a hard billing cap. Set a spending limit with your provider as well.
+
+**Does it need a database server?** No. It uses embedded PostgreSQL (PGlite) by default. A real PostgreSQL server is optional.
+
+**Can I expose it on a network?** It is local-only by default. See [Remote access](#remote-access): set `SIMLIFE_ACCESS_TOKEN` and put it behind HTTPS.
+
+**Are the agents people?** No. Primes are AI models. The world's inhabitants are deterministic simulations.
+
 ## Architecture (short)
+
+How one council session runs (`src/lib/council/orchestrator.ts`):
+
+```mermaid
+flowchart LR
+  Q["Founder's question"] --> I["Interpret<br/>(Chair)"]
+  I --> A["Analyst"] & S["Skeptic"] & R["Researcher"] & B["Builder"]
+  subgraph IND["Independent contributions: in parallel, blind"]
+    A
+    S
+    R
+    B
+  end
+  A & S & R & B --> C["Critique"]
+  C --> RS["Resolve<br/>revise · defend · concede"]
+  RS -- "material challenge left<br/>and rounds remain" --> C
+  RS --> SY["Synthesize<br/>(Synthesizer)"]
+  SY --> F["Final answer<br/>+ preserved disagreement"]
+  P(["Founder: stop · another round ·<br/>challenge · address · exclude · override"]) -.-> C
+  G[["Budget guard: reserve worst-case cost<br/>before every model call"]] -.-> IND
+```
+
+How events reach the browser, live and on replay:
+
+```mermaid
+flowchart LR
+  UI["Browser"] -- "POST /api/sessions" --> RUN["CouncilRun<br/>(server process)"]
+  RUN -- "calls" --> PR["Provider adapters<br/>Anthropic · OpenAI · Gemini ·<br/>OpenAI-compatible · Ollama · demo"]
+  RUN -- "1 append" --> DB[("session_events<br/>Postgres / PGlite")]
+  RUN -- "2 publish" --> BUS["In-process bus"]
+  DB -- "replay from seq" --> SSE["GET /api/sessions/:id/stream<br/>(SSE, resumable)"]
+  BUS -- "follow live" --> SSE
+  SSE --> RED["reducer(events) → chamber state<br/>same reducer for live and replay"]
+  RED --> UI
+```
 
 ```
 src/

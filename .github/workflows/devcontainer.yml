@@ -1,0 +1,64 @@
+name: Dev container
+
+# Proves the dev container works: build it with the Dev Containers CLI, run the
+# same `npm run dev:demo` the container starts on attach, and check the app answers
+# in demo mode with the local-only guard intact.
+on:
+  pull_request:
+    paths:
+      - .devcontainer/**
+      - package-lock.json
+      - .github/workflows/devcontainer.yml
+  push:
+    branches: [main]
+    paths:
+      - .devcontainer/**
+      - package-lock.json
+  workflow_dispatch:
+
+concurrency:
+  group: devcontainer-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  devcontainer:
+    name: dev container (demo mode)
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Build and start the dev container (postCreateCommand; postAttach is the long-running dev server, started below)
+        run: npx --yes @devcontainers/cli@0 up --workspace-folder . --skip-post-attach
+
+      - name: Start the app and check it in demo mode
+        run: |
+          npx --yes @devcontainers/cli@0 exec --workspace-folder . bash -c '
+            set -e
+            nohup npm run dev:demo > /tmp/dev.log 2>&1 &
+            for i in $(seq 1 90); do
+              if curl -fsS http://localhost:3000/api/status > /tmp/status.json 2>/dev/null; then break; fi
+              sleep 2
+            done
+            cat /tmp/status.json
+            node -e "
+              const s = require(\"/tmp/status.json\");
+              const ok = s.database === \"embedded\" && s.access === \"local-only\" && s.seats.total > 0 && s.seats.simulated === s.seats.total;
+              process.exit(ok ? 0 : 1);
+            "
+            curl -fsS http://localhost:3000/ | grep -q "Prime Council"
+            code=$(curl -s -o /dev/null -w "%{http_code}" -H "Host: example.com" http://localhost:3000/api/status)
+            echo "foreign host status: $code"
+            test "$code" = "403"
+          '
+
+      - name: Dev server log
+        if: always()
+        run: npx --yes @devcontainers/cli@0 exec --workspace-folder . cat /tmp/dev.log || true
