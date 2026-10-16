@@ -19,6 +19,10 @@ See [docs/VISION.md](docs/VISION.md) for the full vision.
 
 ## Live demo (GitHub Pages)
 
+[![Six Primes deliberating in the live demo: the Chair interprets, four Primes answer and challenge each other, then the Synthesizer writes the answer](docs/media/council.gif)](https://mfadaee.github.io/Prime-council/)
+
+<sub>Recorded from the live demo. All council text in the demo is simulated (no model is called). More: [session view](docs/media/session.png) · [world map](docs/media/world.png).</sub>
+
 [`index.html`](index.html) is a self-contained demo served by GitHub Pages from `main` (root). It ports the demo provider and the council flow to the browser and inlines the real world engine from `src/lib/sim`. After changing the engine, run `node scripts/build-pages-demo.mjs` to refresh the copy in the page.
 
 ## Quick start
