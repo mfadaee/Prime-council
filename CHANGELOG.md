@@ -7,6 +7,9 @@ All notable changes to Prime Council are recorded here. The format follows [Keep
 ### Added — repository health
 - Security policy (`SECURITY.md`), code of conduct (`CODE_OF_CONDUCT.md`), Dependabot config, pull request and issue templates, CodeQL code scanning, a social preview image (`docs/social-preview.png`), and this changelog.
 
+### Added — live browser demo (2026-10-14)
+- Self-contained GitHub Pages demo (`index.html`, served from `main`): simulated council output with no model calls, plus the real world engine from `src/lib/sim` inlined by `scripts/build-pages-demo.mjs`. Live at https://mfadaee.github.io/Prime-council/.
+
 ### Added — world decision links (#2, 2026-10-07)
 - Sessions the Primes held about a world decision link back to the world's decisions.
 

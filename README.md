@@ -2,6 +2,9 @@
 
 [![CI](https://github.com/mfadaee/Prime-council/actions/workflows/ci.yml/badge.svg)](https://github.com/mfadaee/Prime-council/actions/workflows/ci.yml)
 
+> ### ▶ [Try the live demo](https://mfadaee.github.io/Prime-council/)
+> Runs in your browser with no setup or keys: watch the Primes deliberate, step in as the Founder, and run the world simulation. All council output in the demo is simulated (no model is called); the world uses the app's real engine.
+
 **A prime council that builds intelligence from scratch.**
 
 A local-first web app for **multi-model LLM deliberation**: Claude, GPT, Gemini and local (Ollama) models answer, critique each other and resolve as a council while you watch and steer. Runs in a keyless demo mode out of the box.
@@ -17,6 +20,10 @@ You speak only with the Primes. The agents they create act in the world; you see
 Every animation is driven by a real backend event. Simulated (demo) activity is always labelled. Primes are AI models, and agents are simulations: not people and not conscious beings.
 
 See [docs/VISION.md](docs/VISION.md) for the full vision.
+
+## Live demo (GitHub Pages)
+
+[`index.html`](index.html) is a self-contained demo served by GitHub Pages from `main` (root). It ports the demo provider and the council flow to the browser and inlines the real world engine from `src/lib/sim`. After changing the engine, run `node scripts/build-pages-demo.mjs` to refresh the copy in the page.
 
 ## Quick start
 
