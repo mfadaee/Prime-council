@@ -245,7 +245,7 @@ footer{border-top:1px solid var(--border);color:var(--faint);font-size:12px;padd
         <div class="samples" id="samples" aria-label="Sample questions"></div>
         <div class="row" style="justify-content:space-between">
           <span class="small faint">Demo mode: about 10 seconds per session. Answers are placeholders that show where real model output would appear.</span>
-          <button class="btn primary" id="askBtn">Convene the council</button>
+          <span class="row"><button class="btn" id="shareBtn" title="Copy a link that opens this demo and convenes the council on this question">Copy share link</button><button class="btn primary" id="askBtn">Convene the council</button></span>
         </div>
       </div>
 
@@ -1694,6 +1694,12 @@ const SAMPLES=["Should our town invest in a shared tool library this year?","Wha
 $("samples").innerHTML=SAMPLES.map(q=>`<button type="button">${esc(q)}</button>`).join("");
 $("samples").addEventListener("click",e=>{const b=e.target.closest("button");if(b){$("askBox").value=b.textContent;$("askBox").focus();}});
 $("askBtn").addEventListener("click",()=>{const q=$("askBox").value.trim();if(!q){toast("Write a question for the council first.");$("askBox").focus();return;}if(!members.some(m=>m.enabled&&ROLES[m.role].contributes)){toast("Enable at least one contributing Prime on the Primes page.");return;}newSession(q);});
+// Share links: ?q=<question> opens the demo and convenes the council on that question.
+const MAX_SHARED_Q=300;
+function shareUrl(q){const u=new URL(location.href);u.search="";u.hash="council";u.searchParams.set("q",q.slice(0,MAX_SHARED_Q));return u.toString();}
+$("shareBtn").addEventListener("click",async()=>{const q=$("askBox").value.trim();if(!q){toast("Write a question for the council first.");$("askBox").focus();return;}
+  const url=shareUrl(q);try{await navigator.clipboard.writeText(url);toast("Link copied. Anyone who opens it watches the Primes deliberate on this question (simulated).");}
+  catch(e){window.prompt("Copy this link:",url);}});
 $("cStop").addEventListener("click",()=>{if(!current)return;const r=runs.get(current.id);if(r&&r.busy){r.emit({type:"founder.action",action:"stop"});r.ac.abort();}});
 $("cRound").addEventListener("click",()=>{if(!current)return;const r=runs.get(current.id);if(!r)return;r.extra++;r.emit({type:"founder.action",action:"round"});if(!r.busy){if(r.round>=LIMITS.hardMaxRounds){toast("The hard limit of 3 rounds is reached.");return;}r.continueRun();}toast("Another round requested.");});
 $("cChallenge").addEventListener("click",()=>{$("challengeRow").hidden=!$("challengeRow").hidden;if(!$("challengeRow").hidden)$("challengeText").focus();});
@@ -1809,6 +1815,12 @@ if(sessions.length)current=sessions[0];
 loadWorld();
 renderAll();
 const start=(location.hash||"").replace("#","");showTab(["council","sessions","world","primes"].includes(start)?start:"council");
+// A shared question (?q=) is shown in the ask box and convened once; the parameter is then
+// removed so a reload does not start it again. It is only ever rendered as escaped text.
+let sharedQ=null;try{sharedQ=new URLSearchParams(location.search).get("q");}catch(e){}
+if(sharedQ!==null){sharedQ=sharedQ.replace(/\s+/g," ").trim().slice(0,MAX_SHARED_Q);
+  try{const u=new URL(location.href);u.searchParams.delete("q");history.replaceState(null,"",u.toString());}catch(e){}
+  if(sharedQ){$("askBox").value=sharedQ;showTab("council");if(members.some(m=>m.enabled&&ROLES[m.role].contributes))newSession(sharedQ);}}
 })();
 </script>
 </body>

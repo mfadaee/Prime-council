@@ -23,6 +23,8 @@ See [docs/VISION.md](docs/VISION.md) for the full vision.
 
 <sub>Recorded from the live demo. All council text in the demo is simulated (no model is called). More: [session view](docs/media/session.png) · [world map](docs/media/world.png).</sub>
 
+**Share a question:** type it in the demo and press **Copy share link**. The link (for example [`?q=How should the council decide when its members disagree?`](https://mfadaee.github.io/Prime-council/?q=How%20should%20the%20council%20decide%20when%20its%20members%20disagree%3F#council)) opens the demo and convenes the council on that question. The session is still simulated, and it runs only in the visitor's browser.
+
 [`index.html`](index.html) is a self-contained demo served by GitHub Pages from `main` (root). It ports the demo provider and the council flow to the browser and inlines the real world engine from `src/lib/sim`. After changing the engine, run `node scripts/build-pages-demo.mjs` to refresh the copy in the page.
 
 ## Quick start
