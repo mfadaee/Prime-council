@@ -105,6 +105,16 @@ h3{font-size:14px}
 .speech{position:absolute;left:50%;top:44%;transform:translate(-50%,-50%);width:min(380px,62%);background:rgba(13,18,48,.92);border:1px solid var(--border-strong);border-radius:12px;padding:8px 11px;font-size:12.5px;z-index:2;box-shadow:0 10px 30px rgba(0,0,0,.35)}
 .speech .who{font-weight:600;font-size:12px;margin-bottom:2px}
 @media (max-width:560px){.speech{top:auto;bottom:8px;transform:translateX(-50%);width:calc(100% - 16px)}}
+.chamber-cta{position:absolute;left:50%;top:46%;transform:translate(-50%,-50%);z-index:3;display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center}
+.chamber-cta .btn,.chamber-cta small{white-space:nowrap}
+.chamber-cta .btn{padding:10px 18px;font-size:15px;border-radius:999px;box-shadow:0 8px 28px rgba(139,123,255,.45)}
+.chamber-cta small{font-size:11.5px;color:var(--muted);background:rgba(7,10,26,.7);border-radius:999px;padding:2px 8px}
+@media (max-width:560px){
+  .bar{flex-wrap:wrap;height:auto;padding-block:8px;row-gap:4px}
+  nav.tabs{order:3;width:100%;margin-left:0}
+  .chamber-head{position:static;margin:4px 4px 2px}
+  .chamber-cta{position:static;transform:none;margin:2px 0 6px}
+}
 .legend{display:flex;flex-wrap:wrap;gap:10px;font-size:11.5px;color:var(--muted);padding:6px 6px 2px}
 .legend i{display:inline-block;width:14px;height:3px;border-radius:2px;vertical-align:middle;margin-right:4px}
 
@@ -228,6 +238,10 @@ footer{border-top:1px solid var(--border);color:var(--faint);font-size:12px;padd
           <span class="chip sim-badge" title="Every member uses the demo provider. No model was called.">Simulated · demo provider</span>
         </div>
         <svg id="chamberSvg" viewBox="0 0 100 88" role="img" aria-label="Council chamber"></svg>
+        <div class="chamber-cta" id="chamberCta" hidden>
+          <button class="btn primary" id="ctaBtn" type="button">&#9654; Watch the Primes deliberate</button>
+          <small>About 10 s · simulated, no model called</small>
+        </div>
         <div class="speech" id="speech" hidden></div>
         <div class="legend" aria-label="Link colours">
           <span><i style="background:var(--challenge)"></i>challenges</span>
@@ -1675,7 +1689,7 @@ function renderControls(){const run=current&&runs.get(current.id);const st=curre
   $("cChallenge").disabled=!live;$("cAddress").disabled=!live;$("cOverride").disabled=!(done&&st.final);$("askBtn").disabled=running;
   $("ctrlHint").textContent=!current?"Start a session to use these.":!live?"Replayed sessions are read-only.":running?"The council is deliberating. You can step in at any time.":"Session finished. You can still ask for another round, challenge, address or override.";}
 
-function renderChamber(){const st=current?reduce(current.events):null;drawChamber($("chamberSvg"),$("speech"),$("phasePill"),current,st);}
+function renderChamber(){const st=current?reduce(current.events):null;drawChamber($("chamberSvg"),$("speech"),$("phasePill"),current,st);$("chamberCta").hidden=!!current;}
 
 /* ---------- chronicle ---------- */
 let chronicle=store.get("pc.chronicle",[]);
@@ -1694,6 +1708,8 @@ const SAMPLES=["Should our town invest in a shared tool library this year?","Wha
 $("samples").innerHTML=SAMPLES.map(q=>`<button type="button">${esc(q)}</button>`).join("");
 $("samples").addEventListener("click",e=>{const b=e.target.closest("button");if(b){$("askBox").value=b.textContent;$("askBox").focus();}});
 $("askBtn").addEventListener("click",()=>{const q=$("askBox").value.trim();if(!q){toast("Write a question for the council first.");$("askBox").focus();return;}if(!members.some(m=>m.enabled&&ROLES[m.role].contributes)){toast("Enable at least one contributing Prime on the Primes page.");return;}newSession(q);});
+// First visit: one tap in the empty chamber convenes the council on the question in the ask box.
+$("ctaBtn").addEventListener("click",()=>{if(!$("askBox").value.trim())$("askBox").value=SAMPLES[0];$("askBtn").click();});
 // Share links: ?q=<question> opens the demo and convenes the council on that question.
 const MAX_SHARED_Q=300;
 function shareUrl(q){const u=new URL(location.href);u.search="";u.hash="council";u.searchParams.set("q",q.slice(0,MAX_SHARED_Q));return u.toString();}
