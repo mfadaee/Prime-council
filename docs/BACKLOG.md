@@ -30,6 +30,7 @@ Anything touching secrets, authentication, spending permissions, destructive mig
 - [ ] **review** — Public read-only demo mode (`SIMLIFE_PUBLIC_DEMO=1`): forces the demo provider, never reads provider keys, allows only starting demo sessions and viewing, with the existing rate limits. This is what a hosted live demo would need. Touches access control, so review.
 - [ ] **review** — `npx` launcher (`bin` entry that runs a prebuilt app in demo mode). Needs publishing to npm, which the owner does.
 - [ ] **review** — MCP server mode: expose "ask the council" as an MCP tool so other agents can convene the Primes. Bounded by the existing budget guard.
+- [ ] **low/auto** — Markdown export of a session in the app (`GET /api/sessions/[id]/export.md` + a button on the session page), built from the stored `session_events` with the same reducer used for replay. The live demo already has this (`sessionMarkdown()` in `index.html`); a real-provider export is what makes sessions worth sharing and lets `examples/` hold real council transcripts.
 - [ ] **low/auto** — `.env.example`: commented OpenAI-compatible presets for hosted providers (base URL + model variable names only), each base URL checked against the provider's own docs.
 
 ## Done

@@ -25,6 +25,8 @@ See [docs/VISION.md](docs/VISION.md) for the full vision.
 
 **Share a question:** type it in the demo and press **Copy share link**. The link (for example [`?q=How should the council decide when its members disagree?`](https://mfadaee.github.io/Prime-council/?q=How%20should%20the%20council%20decide%20when%20its%20members%20disagree%3F#council)) opens the demo and convenes the council on that question. The session is still simulated, and it runs only in the visitor's browser.
 
+**Keep a session:** when a session finishes, **Copy as Markdown** or **Download .md** under the outcome exports the question, the final and initial answers and the full transcript. The export is labelled as simulated and ends with a link that convenes the council on the same question.
+
 [`index.html`](index.html) is a self-contained demo served by GitHub Pages from `main` (root). It ports the demo provider and the council flow to the browser and inlines the real world engine from `src/lib/sim`. After changing the engine, run `node scripts/build-pages-demo.mjs` to refresh the copy in the page.
 
 ## Quick start
