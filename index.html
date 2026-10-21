@@ -147,6 +147,10 @@ input.text,select.text{background:rgba(7,10,26,.6);border:1px solid var(--border
 @media (max-width:720px){.compare{grid-template-columns:1fr}}
 .answer{border:1px solid var(--border);border-radius:12px;padding:10px 12px;background:rgba(7,10,26,.35)}
 .final{border-color:rgba(255,211,110,.45);background:rgba(255,211,110,.06)}
+.nextstep{margin-top:12px;border:1px solid var(--border-strong);border-radius:12px;padding:10px 12px;background:rgba(139,123,255,.07)}
+.nextstep pre{margin:6px 0 0;padding:8px 10px;border-radius:8px;background:rgba(7,10,26,.6);border:1px solid var(--border);font-size:12px;line-height:1.5;white-space:pre-wrap;overflow-wrap:anywhere}
+.nextstep .row{flex-wrap:wrap;gap:6px;margin-top:8px}
+.nextstep a.btn{text-decoration:none}
 .empty{border:1px dashed var(--border-strong);border-radius:12px;padding:16px;color:var(--muted);text-align:center}
 
 /* chronicle */
@@ -1679,7 +1683,7 @@ function renderOutcome(){const el=$("outcome");if(!current){return;}const st=red
   $("outcomeBadge").hidden=false;
   if(!st.final){el.innerHTML=st.status==="stopped"?`<div class="empty">The Founder stopped this session before the Synthesizer answered.</div>`:`<div class="empty">Deliberating…</div>`;return;}
   const ov=st.override?`<div class="answer final" style="margin-bottom:10px"><div class="label" style="color:var(--prime)">Founder override · the decision of record</div><p style="margin:4px 0 0">${esc(st.override)}</p></div>`:"";
-  el.innerHTML=ov+`<div class="compare"><div class="answer"><div class="label">Initial answer (Analyst, before critique)</div><p style="margin:4px 0 0">${esc(st.initial?st.initial.answer:"None")}</p></div><div class="answer final"><div class="label" style="color:var(--prime)">Final answer (Synthesizer)</div><p style="margin:4px 0 0">${esc(st.final.answer)}</p><div class="small faint" style="margin-top:6px">Confidence ${Math.round(st.final.confidence*100)}% · ${esc(st.final.uncertainty.join("; "))}</div></div></div>`+(st.status==="running"?"":`<div class="row" style="justify-content:flex-end;margin-top:10px"><button class="btn sm" data-export="copy" title="Copy the whole session (answer, critiques and transcript) as Markdown">Copy as Markdown</button><button class="btn sm" data-export="download" title="Download the session as a .md file">Download .md</button></div>`)+(current.worldProjectId?worldNote():"");
+  el.innerHTML=ov+`<div class="compare"><div class="answer"><div class="label">Initial answer (Analyst, before critique)</div><p style="margin:4px 0 0">${esc(st.initial?st.initial.answer:"None")}</p></div><div class="answer final"><div class="label" style="color:var(--prime)">Final answer (Synthesizer)</div><p style="margin:4px 0 0">${esc(st.final.answer)}</p><div class="small faint" style="margin-top:6px">Confidence ${Math.round(st.final.confidence*100)}% · ${esc(st.final.uncertainty.join("; "))}</div></div></div>`+(st.status==="running"?"":`<div class="row" style="justify-content:flex-end;margin-top:10px"><button class="btn sm" data-export="copy" title="Copy the whole session (answer, critiques and transcript) as Markdown">Copy as Markdown</button><button class="btn sm" data-export="download" title="Download the session as a .md file">Download .md</button></div>`+nextStep())+(current.worldProjectId?worldNote():"");
 }
 /* ---------- Markdown export (a completed session as a readable, shareable .md) ---------- */
 function mdEsc(t){return String(t==null?"":t).replace(/\r?\n+/g," ").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").trim();}
@@ -1707,6 +1711,9 @@ function sessionMarkdown(s){const st=reduce(s.events);const L=[];const who=id=>{
     L.push("");}
   L.push("---","",`Convene the council on this question yourself: ${shareUrl(s.question)}`,"","Made with [Prime Council](https://github.com/mfadaee/prime-council).","");
   return L.join("\n");}
+const RUN_CMD="git clone https://github.com/mfadaee/prime-council && cd prime-council\ndocker compose up --build";
+function nextStep(){return`<div class="nextstep" aria-label="Run the real app"><div class="label" style="color:var(--text)">That council was simulated. Run it with real models.</div><p class="small muted" style="margin:4px 0 0">The app runs on your machine and spreads its Primes across the models you connect: Claude, GPT, Gemini, any OpenAI-compatible server, or Ollama. It starts in demo mode, so it works before you add any keys.</p><pre><code>${esc(RUN_CMD)}</code></pre><div class="row"><button class="btn sm" data-runcmd title="Copy the two commands">Copy commands</button><a class="btn sm" href="https://github.com/mfadaee/Prime-council#quick-start" target="_blank" rel="noopener">Quick start (Docker, Node, Codespaces)</a><a class="btn sm" href="https://github.com/mfadaee/Prime-council" target="_blank" rel="noopener">Source on GitHub</a></div></div>`;}
+async function copyRunCmd(){try{await navigator.clipboard.writeText(RUN_CMD);toast("Commands copied. Then open http://localhost:3000");}catch(e){window.prompt("Copy these commands:",RUN_CMD);}}
 function mdFilename(s){const slug=s.question.toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"").slice(0,60)||"session";return`prime-council-${slug}.md`;}
 async function copyMarkdown(s){const md=sessionMarkdown(s);try{await navigator.clipboard.writeText(md);toast("Session copied as Markdown (marked as simulated).");}catch(e){downloadMarkdown(s);}}
 function downloadMarkdown(s){const blob=new Blob([sessionMarkdown(s)],{type:"text/markdown;charset=utf-8"});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=mdFilename(s);document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},0);toast("Downloaded "+a.download);}
@@ -1841,7 +1848,7 @@ $("wRun").addEventListener("click",()=>setRun(!wTimer));
 $("wStep").addEventListener("click",()=>{setRun(false);stepWorld();});
 $("wSpeed").addEventListener("change",()=>{if(wTimer){setRun(false);setRun(true);}});
 $("wReset").addEventListener("click",()=>{openDrawer(`<h2 id="drawerTitle">Start a new world?</h2><p class="small muted">This replaces Ember Hollow in this browser with a freshly founded town. Your council sessions are kept.</p><div class="row" style="justify-content:flex-end"><button class="btn" data-close>Keep this world</button><button class="btn danger" id="resetGo">Start a new world</button></div>`);$("resetGo").addEventListener("click",()=>{setRun(false);newWorld();wSel=null;renderWorld();closeDrawer();toast("A new Ember Hollow has been founded.");});});
-document.addEventListener("click",e=>{const x=e.target.closest("[data-export]");if(x&&current){if(x.dataset.export==="copy")copyMarkdown(current);else downloadMarkdown(current);return;}});
+document.addEventListener("click",e=>{if(e.target.closest("[data-runcmd]")){copyRunCmd();return;}const x=e.target.closest("[data-export]");if(x&&current){if(x.dataset.export==="copy")copyMarkdown(current);else downloadMarkdown(current);return;}});
 document.addEventListener("click",e=>{const d=e.target.closest("[data-decide]");if(d){const sess=current&&current.worldProjectId===d.dataset.pid?current.id:null;decideWorld(d.dataset.pid,d.dataset.decide,sess);}
   const a=e.target.closest("[data-askcouncil]");if(a){const pid=a.dataset.askcouncil;const ex=sessions.find(x=>x.worldProjectId===pid);if(ex){current=ex;}else{const p=world.projects.find(x=>x.id===pid);newSession(councilQuestion(world,p),{worldProjectId:pid});}showTab("council");renderAll();window.scrollTo({top:0,behavior:"smooth"});}
   const i=e.target.closest("[data-inh]");if(i){wSel=wSel===i.dataset.inh?null:i.dataset.inh;renderWorld();}

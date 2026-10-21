@@ -27,6 +27,8 @@ See [docs/VISION.md](docs/VISION.md) for the full vision.
 
 **Keep a session:** when a session finishes, **Copy as Markdown** or **Download .md** under the outcome exports the question, the final and initial answers and the full transcript. The export is labelled as simulated and ends with a link that convenes the council on the same question.
 
+**Run it for real:** under a finished session, the demo shows the two commands that start the app on your machine (Docker, demo mode first), with a copy button and links to the quick start and the source.
+
 [`index.html`](index.html) is a self-contained demo served by GitHub Pages from `main` (root). It ports the demo provider and the council flow to the browser and inlines the real world engine from `src/lib/sim`. After changing the engine, run `node scripts/build-pages-demo.mjs` to refresh the copy in the page.
 
 ## Quick start
