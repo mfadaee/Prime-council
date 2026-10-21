@@ -9,6 +9,14 @@
  *      (3–4 repeat only while material challenges remain, up to the round limit)
  *   5. synthesize   – the Synthesizer writes the final answer
  *
+ * In "beyond" mode (Beyond the System) the same bounded pipeline runs with two
+ * extra steps and different prompts:
+ *   1. map         – the Chair maps the current system and classifies its assumptions (stages A–B)
+ *   2. independent – members remove assumptions one at a time and propose alternatives (C–D)
+ *   3–4.           – critique attacks the alternatives; originators keep, revise or withdraw them (E)
+ *   + experiment   – one member designs the smallest reversible experiment (F); nothing is run
+ *   5. synthesize  – what was learned and what to investigate next (G), kept as a discovery record
+ *
  * Every step emits persisted events (the UI animates only these). Limits on
  * rounds, concurrency, tokens, time, retries and spend are enforced here, in
  * code — nothing a model writes can change them.
@@ -19,19 +27,27 @@ import { contributions as contributionsTable, councilSessions, sessionEvents, us
 import { costUsd, estimateTokens, type Price } from "@/lib/providers/pricing";
 import { ProviderError, type GenerateRequest, type ProviderAdapter, type ResolvedProvider } from "@/lib/providers/types";
 import { newId } from "@/lib/util";
+import { recordDiscovery } from "@/lib/discovery/record";
+import { sanitizeAlternatives, withAssumptionIds } from "./beyond";
 import { BudgetGuard, Semaphore, type BudgetLimits } from "./budget";
 import { publish } from "./bus";
 import {
   parseContribution,
   parseCritiques,
   parseDirect,
+  parseExperiment,
   parseFinal,
   parseInterpretation,
   parseReply,
+  parseSystemMap,
   type Parsed,
 } from "./parse";
 import {
+  beyondIndependentPrompt,
+  beyondSynthesizePrompt,
   critiquePrompt,
+  experimentPrompt,
+  mapPrompt,
   directPrompt,
   independentPrompt,
   interpretPrompt,
@@ -44,6 +60,7 @@ import type {
   Contribution,
   CouncilEvent,
   CritiqueSet,
+  ExperimentPlan,
   FinalAnswer,
   Interpretation,
   Limits,
@@ -53,8 +70,10 @@ import type {
   PrimeAction,
   Reply,
   RosterEntry,
+  SessionMode,
   SessionStatus,
   StoredEvent,
+  SystemMap,
   UsageInfo,
 } from "./types";
 
@@ -82,10 +101,14 @@ export interface SessionState {
   round: number;
   final: FinalAnswer | null;
   initialAnswer: Contribution | null;
+  /** Beyond mode: the Chair's system map (also serves as the interpretation). */
+  map: SystemMap | null;
+  /** Beyond mode: the proposed experiment and who designed it. */
+  experiment: { memberId: string; plan: ExperimentPlan } | null;
 }
 
 export function emptyState(): SessionState {
-  return { interpretation: null, latest: new Map(), initial: new Map(), critiques: [], replies: [], round: 0, final: null, initialAnswer: null };
+  return { interpretation: null, latest: new Map(), initial: new Map(), critiques: [], replies: [], round: 0, final: null, initialAnswer: null, map: null, experiment: null };
 }
 
 /** Like Promise.all, but waits for every task to settle before rethrowing, so no
@@ -132,6 +155,13 @@ export class CouncilRun {
   readonly limits: Limits;
   readonly memory: string[];
   readonly charter: string;
+  readonly mode: SessionMode;
+  /** Council record included by the Founder (a revisited discovery, or the council's own description). */
+  readonly context: string;
+  readonly parentDiscoveryId: string | null;
+  /** Beyond mode applied to the council itself. */
+  readonly selfExamination: boolean;
+  discoveryId: string | null = null;
   readonly excluded: Set<string>;
   readonly state: SessionState;
   private readonly deps: OrchestratorDeps;
@@ -164,6 +194,10 @@ export class CouncilRun {
     limits: Limits;
     memory: string[];
     charter?: string;
+    mode?: SessionMode;
+    context?: string;
+    parentDiscoveryId?: string | null;
+    selfExamination?: boolean;
     budget: BudgetLimits;
     sessionSpent?: number;
     dailySpent: number;
@@ -179,6 +213,10 @@ export class CouncilRun {
     this.limits = opts.limits;
     this.memory = opts.memory;
     this.charter = opts.charter ?? "";
+    this.mode = opts.mode ?? "standard";
+    this.context = (opts.context ?? "").slice(0, 4000);
+    this.parentDiscoveryId = opts.parentDiscoveryId ?? null;
+    this.selfExamination = Boolean(opts.selfExamination);
     this.excluded = new Set(opts.excluded ?? []);
     this.state = opts.state ?? emptyState();
     this.seq = opts.nextSeq ?? 0;
@@ -334,7 +372,7 @@ export class CouncilRun {
             maxOutputTokens: maxOut,
             timeoutMs: this.limits.timeoutMs,
             signal,
-            hint: { phase, role: m.role, memberName: m.name, question: this.question, targets: targets?.map((t) => ({ id: t.id, name: t.name })) },
+            hint: { phase, role: m.role, memberName: m.name, question: this.question, mode: this.mode, targets: targets?.map((t) => ({ id: t.id, name: t.name })) },
           };
           try {
             const res = await adapter.generate(provider, req);
@@ -463,6 +501,7 @@ export class CouncilRun {
   private async interpret() {
     const chair = this.chair();
     if (!chair) return;
+    if (this.mode === "beyond") return this.mapSystem(chair);
     await this.phase("interpret", 0, [chair]);
     const r = await this.call(chair, "interpret", 0, interpretPrompt(this.question, this.memory), parseInterpretation, "preparing");
     if (r) {
@@ -473,13 +512,33 @@ export class CouncilRun {
     }
   }
 
+  /** Stages A–B: the Chair maps the current system. Assumption ids are assigned here, in code. */
+  private async mapSystem(chair: RosterEntry) {
+    await this.phase("map", 0, [chair]);
+    const r = await this.call(chair, "map", 0, mapPrompt(this.question, this.memory, this.context), parseSystemMap, "preparing");
+    if (!r) return;
+    const map = withAssumptionIds(r.value);
+    this.state.map = map;
+    this.state.interpretation = map;
+    await this.setState(chair.id, "speaking");
+    await this.publishMessage(chair, "system_map", "map", 0, map, [], r);
+    await this.setState(chair.id, "idle");
+  }
+
   private async independent() {
     const members = this.contributors();
     await this.phase("independent", 0, members);
     await settleAll(
       members.map(async (m) => {
-        const r = await this.call(m, "independent", 0, independentPrompt(this.question, this.state.interpretation, this.memory), parseContribution, "preparing");
+        const prompt =
+          this.mode === "beyond"
+            ? beyondIndependentPrompt(this.question, this.state.map, this.memory, this.context)
+            : independentPrompt(this.question, this.state.interpretation, this.memory);
+        const r = await this.call(m, "independent", 0, prompt, parseContribution, "preparing");
         if (!r) return;
+        // Alternatives only exist in beyond mode; their ids and assumption references are set in code.
+        if (this.mode === "beyond") r.value.alternatives = sanitizeAlternatives(r.value.alternatives, m.id, this.state.map);
+        else delete r.value.alternatives;
         this.state.latest.set(m.id, r.value);
         this.state.initial.set(m.id, r.value);
         await this.setState(m.id, "speaking");
@@ -507,13 +566,19 @@ export class CouncilRun {
       members.map(async (m) => {
         const others = members.filter((o) => o.id !== m.id).map((o) => ({ member: o, contribution: this.state.latest.get(o.id)! }));
         if (!others.length) return;
-        const r = await this.call(m, "critique", round, critiquePrompt(this.question, this.state.interpretation, others, focus), parseCritiques, "reviewing", others.map((o) => o.member));
+        const r = await this.call(m, "critique", round, critiquePrompt(this.question, this.state.interpretation, others, focus, this.mode), parseCritiques, "reviewing", others.map((o) => o.member));
         if (!r) return;
         const valid = new Set(others.map((o) => o.member.id));
         const set: CritiqueSet = {
           overall: r.value.overall,
           critiques: r.value.critiques
-            .map((c) => ({ ...c, targetMemberId: this.resolveTarget(c.targetMemberId, m.id, valid) ?? "" }))
+            .map((c) => {
+              const targetMemberId = this.resolveTarget(c.targetMemberId, m.id, valid) ?? "";
+              // An alternative reference must name one of the target's own published alternatives.
+              const own = this.state.latest.get(targetMemberId)?.alternatives ?? [];
+              const alternativeId = c.alternativeId && own.some((a) => a.id === c.alternativeId) ? c.alternativeId : undefined;
+              return { ...c, targetMemberId, alternativeId, escapesFraming: alternativeId ? c.escapesFraming : undefined };
+            })
             .filter((c) => c.targetMemberId),
         };
         this.state.critiques.push({ from: m.id, round, set });
@@ -542,6 +607,9 @@ export class CouncilRun {
         const own = this.state.latest.get(m.id)!;
         const r = await this.call(m, "resolve", round, resolvePrompt(this.question, own, received), parseReply, "preparing");
         if (!r) return;
+        // Members can only keep, revise or withdraw their own alternatives.
+        const ownIds = new Set((own.alternatives ?? []).map((a) => a.id));
+        r.value.alternativeUpdates = (r.value.alternativeUpdates ?? []).filter((u) => ownIds.has(u.id));
         this.state.replies.push({ member: m.id, round, reply: r.value });
         if (r.value.response !== "defend") {
           this.state.latest.set(m.id, { ...own, answer: r.value.updatedAnswer || own.answer, rationale: r.value.reason || own.rationale });
@@ -569,6 +637,38 @@ export class CouncilRun {
     }
   }
 
+  /** The member who designs the experiment: the Builder when available, else another contributor. */
+  private experimentDesigner(): RosterEntry | undefined {
+    const withWork = this.contributors().filter((m) => this.state.latest.has(m.id));
+    return withWork.find((m) => m.role === "builder") ?? withWork[0] ?? this.chair();
+  }
+
+  /** Stage F: design (never run) the smallest reversible experiment. */
+  private async designExperiment() {
+    await this.checkpoint();
+    const designer = this.experimentDesigner();
+    if (!designer) return;
+    const alternatives = this.roster.flatMap((m) =>
+      (this.state.latest.get(m.id)?.alternatives ?? []).map((alt) => ({
+        alt,
+        originator: m.name,
+        stands: this.state.critiques.flatMap((c) =>
+          c.set.critiques.filter((k) => k.alternativeId === alt.id).map((k) => `${this.member(c.from)?.name ?? c.from} ${k.stance}s: ${k.reason}`),
+        ),
+      })),
+    );
+    await this.phase("experiment", this.state.round, [designer]);
+    const r = await this.call(designer, "experiment", this.state.round, experimentPrompt(this.question, this.state.map, alternatives), parseExperiment, "preparing");
+    if (!r) return;
+    const known = new Set(alternatives.map((a) => a.alt.id));
+    const plan: ExperimentPlan = { ...r.value, alternativeId: r.value.alternativeId && known.has(r.value.alternativeId) ? r.value.alternativeId : null };
+    this.state.experiment = { memberId: designer.id, plan };
+    await this.setState(designer.id, "speaking");
+    const target = plan.alternativeId?.split("#")[0];
+    await this.publishMessage(designer, "experiment", "experiment", this.state.round, plan, target && target !== designer.id ? [target] : [], r);
+    await this.setState(designer.id, "idle");
+  }
+
   private async synthesize() {
     await this.checkpoint();
     const synth = this.synthesizer();
@@ -577,8 +677,19 @@ export class CouncilRun {
     await this.phase("synthesize", this.state.round, [synth]);
     const critiques = this.state.critiques.map((c) => ({ from: this.member(c.from)!, set: c.set }));
     const replies = this.state.replies.map((r) => ({ member: this.member(r.member)!, reply: r.reply }));
-    const r = await this.call(synth, "synthesize", this.state.round, synthesizePrompt(this.question, this.state.interpretation, latest, critiques, replies, this.memory), parseFinal, "preparing");
+    const prompt =
+      this.mode === "beyond"
+        ? beyondSynthesizePrompt(this.question, this.state.map, latest, critiques, replies, this.state.experiment?.plan ?? null, this.memory, this.selfExamination)
+        : synthesizePrompt(this.question, this.state.interpretation, latest, critiques, replies, this.memory);
+    const r = await this.call(synth, "synthesize", this.state.round, prompt, parseFinal, "preparing");
     if (!r) throw new Error("The synthesizer could not produce a final answer.");
+    if (!this.selfExamination) delete r.value.proposedChanges;
+    if (this.mode !== "beyond") {
+      delete r.value.learned;
+      delete r.value.nextQuestions;
+      delete r.value.conventionalIsBest;
+      delete r.value.framingVerdict;
+    }
     this.state.final = r.value;
     await this.setState(synth.id, "speaking");
     await this.publishMessage(synth, "synthesis", "synthesize", this.state.round, r.value, latest.map((l) => l.member.id).filter((id) => id !== synth.id), r);
@@ -592,7 +703,7 @@ export class CouncilRun {
   start(simulated: boolean): Promise<SessionStatus> {
     registerRun(this);
     this.done = this.lifecycle(async () => {
-      await this.emit({ type: "session.started", question: this.question, roster: this.roster, limits: this.limits, simulated });
+      await this.emit({ type: "session.started", question: this.question, roster: this.roster, limits: this.limits, simulated, mode: this.mode });
       for (const m of this.roster) {
         if (!m.enabled) continue;
         const r = this.deps.resolve(m);
@@ -607,6 +718,7 @@ export class CouncilRun {
       if (!this.contributors().length) throw new Error("No contributing member is available. Enable a member with a working provider.");
       await this.independent();
       await this.deliberate();
+      if (this.mode === "beyond") await this.designExperiment();
       await this.synthesize();
     });
     return this.done;
@@ -669,12 +781,53 @@ export class CouncilRun {
         outputTokens: this.totals.outputTokens,
         costUsd: this.totals.costUsd,
         unpricedCalls: this.guard.unpricedCalls,
-        config: { limits: this.limits, excluded: [...this.excluded], round: this.state.round },
+        config: this.config(),
         endedAt: new Date(),
       })
       .where(eq(councilSessions.id, this.sessionId));
+    await this.keepDiscovery(status);
     await this.emit({ type: "session.ended", status, reason });
     return status;
+  }
+
+  /** Session config as persisted (rebuilt by getRun for continuation). */
+  config() {
+    return {
+      limits: this.limits,
+      excluded: [...this.excluded],
+      round: this.state.round,
+      mode: this.mode,
+      context: this.context,
+      parentDiscoveryId: this.parentDiscoveryId,
+      selfExamination: this.selfExamination,
+    };
+  }
+
+  /** Beyond mode: keep the investigation, finished or not. Never fails the session. */
+  private async keepDiscovery(status: SessionStatus) {
+    if (this.mode !== "beyond" || (!this.state.map && !this.state.initial.size)) return;
+    try {
+      this.discoveryId = await recordDiscovery(this.deps.db, {
+        sessionId: this.sessionId,
+        question: this.question,
+        completed: status === "completed",
+        scope: this.selfExamination ? "council" : "question",
+        parentId: this.parentDiscoveryId,
+        simulated: this.allSimulated,
+        roster: this.roster.map((m) => ({ id: m.id, name: m.name })),
+        beyond: {
+          map: this.state.map,
+          contributions: [...this.state.initial.entries()].map(([memberId, contribution]) => ({ memberId, contribution })),
+          critiques: this.state.critiques,
+          replies: this.state.replies,
+          experiment: this.state.experiment,
+          final: this.state.final,
+        },
+      });
+      await this.emit({ type: "discovery.recorded", discoveryId: this.discoveryId });
+    } catch (err) {
+      console.error("[discovery]", err instanceof Error ? err.message : err);
+    }
   }
 
   /** The Founder's decision supersedes the council's (the council's answer is kept for comparison). */

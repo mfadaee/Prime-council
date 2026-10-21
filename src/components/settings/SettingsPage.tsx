@@ -12,6 +12,7 @@ interface Autonomy {
   backgroundDailyBudgetUsd: number;
   globalPause: boolean;
   primeGovernance: boolean;
+  selfExaminationDays: number;
 }
 type Price = { inputPerM: number; outputPerM: number };
 interface SettingsData {
@@ -248,6 +249,21 @@ export function SettingsPage() {
                 The Primes deliberate on each world decision awaiting review and apply clear, non-simulated decisions themselves. You see every decision and outcome in the Chronicle and can still
                 decide any item first. Uses the background budget and daily session cap.
               </span>
+            </span>
+          </label>
+          <label className="text-xs text-muted sm:col-span-2">
+            Council self-examination every N days (0 = off)
+            <input
+              type="number"
+              className="field mt-1"
+              min={0}
+              max={30}
+              value={autonomy.selfExaminationDays}
+              onChange={(e) => setAutonomy({ ...autonomy, selfExaminationDays: Number(e.target.value) })}
+            />
+            <span className="mt-1 block">
+              Needs scheduled background sessions. The Primes examine one assumption in how the council itself operates (Beyond the System). Proposed changes are recorded in Discoveries for your
+              approval; nothing is applied automatically.
             </span>
           </label>
           <label className="text-xs text-muted">

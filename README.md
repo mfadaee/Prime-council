@@ -70,6 +70,7 @@ With no provider configured, every seat uses the built-in **demo provider**:
 | `TEST_DATABASE_URL=postgres://… npm test` | Also run the real-PostgreSQL integration test |
 | `PW_CHROMIUM_PATH=/path/to/chrome npm run test:e2e` | Browser tests (desktop + mobile) against a production build |
 | `npm run check` | lint + typecheck + unit tests + build |
+| `BEYOND_EVAL=1 npm run eval:beyond` | Opt-in: compare Beyond the System with standard sessions on real models (spends budget) |
 
 ## What you can do
 
@@ -80,6 +81,7 @@ With no provider configured, every seat uses the built-in **demo provider**:
 - Read the synchronized transcript. Each member's published contribution expands to show rationale, evidence, assumptions and critiques (never hidden chain-of-thought).
 - Act as Prime: **stop**, **request another round**, **challenge a claim**, **address one member**, **exclude/re-include** a member, **override** the decision.
 - Compare the **initial vs final** answer.
+- Choose **⟁ Beyond the System** to have the Primes map the current system, separate real constraints from changeable conventions, propose structurally different alternatives (including one that reframes the problem), attack them, and design the smallest reversible experiment. Every Prime carries this lens in ordinary sessions too, and uses it only when it matters.
 - Track elapsed time, tokens and **estimated** cost.
 - **Replay** any finished session on its timeline.
 
@@ -103,6 +105,8 @@ With no provider configured, every seat uses the built-in **demo provider**:
 - Projects above a threshold go to the **council docket**. Ask the council to deliberate (a linked session), or decide yourself. Decisions enter the world as explicit events.
 - Run, pause, step and change speed; take snapshots and restore them; replay any stored tick.
 - An animated map shows who is doing what.
+
+**Discoveries** (`/discoveries`): every Beyond-the-System investigation, searchable and linked by recurring assumptions. Record what happened when you ran an experiment, mark which assumptions held, approve follow-ups, revisit an investigation to build on it, or ask the council to **examine itself** (what it proposes about its own design is a record for you — never applied automatically). Details in [docs/BEYOND_THE_SYSTEM.md](docs/BEYOND_THE_SYSTEM.md).
 
 **Improvements** (`/improvements`): the history of changes, with purpose, validation and remaining issues, plus the status of the daily improvement job.
 

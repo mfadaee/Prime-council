@@ -3,12 +3,12 @@ import { and, asc, desc, eq, gte, inArray } from "drizzle-orm";
 import { getDb, type Db } from "@/lib/db/client";
 import { councilSessions, suggestions } from "@/lib/db/schema";
 import { runs } from "@/lib/council/orchestrator";
-import { audit, dailySpend, startSession } from "@/lib/council/service";
+import { audit, dailySpend, startSession, suggestionStartOptions } from "@/lib/council/service";
 import { getAutonomy } from "@/lib/settings";
 import { startOfUtcDay } from "@/lib/util";
 import { getWorld, requestCouncil } from "@/lib/sim/store";
 import type { WorldState } from "@/lib/sim/types";
-import { ruleSuggestions } from "./suggestions";
+import { queueSelfExamination, ruleSuggestions } from "./suggestions";
 
 /**
  * Background activity scheduler (opt-in, bounded, pausable).
@@ -102,10 +102,11 @@ export async function tick(db: Db, now = new Date()): Promise<{ outcome: TickOut
     .limit(1);
   if (last && now.getTime() - last.startedAt.getTime() < a.intervalMinutes * 60_000) return done("waiting");
 
+  if (a.selfExaminationDays > 0) await queueSelfExamination(db, a.selfExaminationDays, now);
   const [next] = await db.select().from(suggestions).where(eq(suggestions.status, "scheduled")).orderBy(asc(suggestions.createdAt)).limit(1);
   if (!next) return done("nothing-scheduled");
 
-  const { id, run } = await startSession(db, { question: next.question, origin: "background", limitsOverride: { maxRounds: 1, hardMaxRounds: 1 } });
+  const { id, run } = await startSession(db, { question: next.question, origin: "background", limitsOverride: { maxRounds: 1, hardMaxRounds: 1 }, ...suggestionStartOptions(next) });
   await db.update(suggestions).set({ status: "running", sessionId: id }).where(eq(suggestions.id, next.id));
   await audit(db, "scheduler", "background.start", id, { suggestionId: next.id });
   void run.done.then(async (status) => {

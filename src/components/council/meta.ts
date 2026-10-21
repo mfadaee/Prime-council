@@ -23,6 +23,8 @@ export const ROLE_META: Record<CouncilRole, { title: string; glyph: string }> = 
 
 export const KIND_LABEL: Record<MessageKind, string> = {
   interpretation: "Interpretation",
+  system_map: "System map",
+  experiment: "Experiment design",
   contribution: "Contribution",
   critique: "Critique",
   reply: "Reply",

@@ -48,6 +48,14 @@ export interface AutonomySettings {
   globalPause: boolean;
   /** The Primes decide world docket items themselves (background budget). Default off. */
   primeGovernance: boolean;
+  /**
+   * Recursive self-examination cadence in days (0 = off, the default). When on, and
+   * background sessions are enabled, the scheduler queues one Beyond-the-System
+   * examination of the council itself every N days. It runs through the normal
+   * background path (interval, daily cap, background budget, global pause), and any
+   * change it proposes is a record for the Founder — never applied by code.
+   */
+  selfExaminationDays: number;
 }
 
 export const DEFAULT_AUTONOMY: AutonomySettings = {
@@ -58,6 +66,7 @@ export const DEFAULT_AUTONOMY: AutonomySettings = {
   backgroundDailyBudgetUsd: 0.25,
   globalPause: false,
   primeGovernance: false,
+  selfExaminationDays: 0,
 };
 
 export const autonomySchema = z.object({
@@ -68,6 +77,7 @@ export const autonomySchema = z.object({
   backgroundDailyBudgetUsd: z.number().min(0).max(20),
   globalPause: z.boolean(),
   primeGovernance: z.boolean().default(false),
+  selfExaminationDays: z.number().int().min(0).max(30).default(0),
 });
 
 export const priceTableSchema = z.record(

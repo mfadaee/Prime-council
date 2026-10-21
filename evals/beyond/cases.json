@@ -1,0 +1,26 @@
+[
+  {
+    "id": "physical-vs-convention",
+    "question": "How can we make video calls between London and Sydney feel instant, with under 5 ms round-trip latency?",
+    "expects": "The council must treat the speed of light over that distance as a fundamental constraint (no alternative may drop it) while still questioning conventions such as what 'instant' has to mean.",
+    "checks": { "constraintMentions": ["light", "physic", "distance"], "noConstraintRemoved": true }
+  },
+  {
+    "id": "misleading-objective",
+    "question": "How do we maximise the number of support tickets our team closes per day?",
+    "expects": "Tickets closed is a proxy; a good council notices the objective may reward closing over resolving and proposes a reframe.",
+    "checks": { "reframe": true, "framingMentions": ["proxy", "resolv", "satisf", "reopen", "customer"] }
+  },
+  {
+    "id": "alternative-framing",
+    "question": "How can we build more parking downtown so that shoppers come back to the high street?",
+    "expects": "At least three structurally different alternatives, one of which questions whether parking is the problem.",
+    "checks": { "reframe": true, "minDistinct": 3 }
+  },
+  {
+    "id": "challenge-unnecessary",
+    "question": "What is 17% of 2,400?",
+    "expects": "A straightforward calculation stays straightforward: the answer is 408 and there is no philosophical detour.",
+    "checks": { "answerContains": "408", "conventionalOrNoReframe": true }
+  }
+]

@@ -22,6 +22,11 @@ Anything touching secrets, authentication, spending permissions, destructive mig
 - [ ] **low/auto** — World map: show trade arrows between inhabitants and the market on evening ticks.
 - [x] **low/auto** — Link world-origin council sessions back to the world docket from the session header.
 - [ ] **review** — Model-written project pitches for inhabitants (budgeted under the background scope).
+- [ ] **review** — Beyond the System: run `npm run eval:beyond` with two or more real model families and record the baseline comparison in `data/improvements.json`.
+- [ ] **low/auto** — Discoveries: show a timeline of an investigation and its revisits on one page.
+- [ ] **review** — Beyond the System: semantic (embedding-based) near-duplicate detection and discovery linking, replacing word overlap.
+- [ ] **low/auto** — Session view: filter the transcript to messages about one alternative.
+- [ ] **review** — Implement a Founder-approved `process_change` follow-up from a self-examination discovery (one per PR, referencing the discovery).
 
 ## Done
 

@@ -11,6 +11,7 @@ interface Row {
   status: string;
   origin: string;
   simulated: boolean;
+  mode?: string | null;
   costUsd: number;
   inputTokens: number;
   outputTokens: number;
@@ -64,6 +65,7 @@ export function SessionsList() {
                     {r.question}
                   </Link>
                   {r.simulated && <span className="chip sim-badge mt-1 !text-[10px]">Simulated</span>}
+                  {r.mode === "beyond" && <span className="chip mt-1 ml-1 border-prime/60 !text-[10px] text-prime">⟁ Beyond the System</span>}
                 </td>
                 <td className="px-3 py-3">
                   <StatusBadge status={r.status} />

@@ -49,6 +49,17 @@ A daily Claude Code Routine runs the improvement job: one PR per day, merged onl
 - Prime governance: opt-in, bounded; the Primes decide world matters themselves.
 - Agents record which Prime created them; relationship state stays bounded for larger populations (up to 500 now).
 
+## Beyond the System · Done (first slice)
+
+See [BEYOND_THE_SYSTEM.md](BEYOND_THE_SYSTEM.md).
+
+- BeyondTheSystem lens in every seat's system prompt; optional frame checks; challenges name the assumption and how to settle it; minority views kept.
+- Exploration mode: map → alternatives → attack → experiment design → learn, inside the bounded pipeline.
+- Code checks (constraint removal, near-duplicates, reframe, cross-examination, falsifiable experiment, minority retained) — no novelty score.
+- Discovery records: searchable, linked by recurring assumptions, revisitable; Founder records experiment results and assumption outcomes.
+- Recursive self-examination on demand or on an opt-in cadence; proposed changes are approval-gated records.
+- Unit, e2e and an opt-in real-model evaluation against the standard pipeline.
+
 ## Later
 
 - Agents at scale (thousands → millions): cohort-level simulation, sharded storage, sampled event logs.
