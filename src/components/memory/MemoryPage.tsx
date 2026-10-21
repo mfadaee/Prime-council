@@ -23,6 +23,7 @@ interface Suggestion {
   proposedBy: string;
   status: string;
   sessionId: string | null;
+  mode?: string | null;
   createdAt: string;
 }
 interface AutonomyInfo {
@@ -224,8 +225,15 @@ export function MemoryPage() {
                     ) : (
                       <b>{s.proposedBy === "rules" ? "rules" : s.proposedBy}</b>
                     )}
+                    {(s.mode === "beyond" || s.mode === "self_examination") && (
+                      <span className="chip border-prime/60 text-prime">{s.mode === "self_examination" ? "Beyond the System · self-examination" : "Beyond the System"}</span>
+                    )}
                     {s.basis.map((b) =>
-                      b.kind === "session" ? (
+                      b.kind === "discovery" ? (
+                        <Link key={b.id} href={`/discoveries/${b.id}`} className="chip text-muted hover:text-ink">
+                          discovery: {b.label}
+                        </Link>
+                      ) : b.kind === "session" ? (
                         <Link key={b.id} href={`/sessions/${b.id}`} className="chip text-muted hover:text-ink">
                           session: {b.label}
                         </Link>

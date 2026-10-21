@@ -64,5 +64,16 @@
     "remainingIssues": "The link goes to the world page, not to the specific project (projects have no anchor yet).",
     "branch": "improve/2026-10-07-session-world-link",
     "pr": null
+  },
+  {
+    "date": "2026-10-21",
+    "title": "Beyond the System: the council questions the system it works within",
+    "purpose": "Let every Prime question the framing, objective and rules of its task — distinguishing fundamental constraints from inherited conventions — and keep what the council learns so it can build on it later, including about itself.",
+    "change": "BeyondTheSystem lens for every seat; an exploration mode (system map, alternatives, attack, experiment design, learning) inside the bounded pipeline; code checks with no novelty score; a discoveries table with search, linking, revisits and Founder-recorded experiment results; opt-in recursive self-examination whose proposals are approval-gated records.",
+    "validation": "Unit tests for assumption identification, alternatives, disagreement, parsing, persistence and safe execution; Playwright flow for the mode and the discovery record; lint, typecheck, build in CI.",
+    "risk": "review",
+    "remainingIssues": "Model judgement is only evaluated by the opt-in real-model eval (npm run eval:beyond), not yet run; near-duplicate and linking detection is lexical.",
+    "branch": "feature/beyond-the-system",
+    "pr": null
   }
 ]

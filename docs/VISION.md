@@ -36,7 +36,8 @@ The millions of exchanges behind those decisions are not pushed at the Founder. 
    - Costs are estimates.
    - Nothing is fabricated.
    - Agents are simulations, not people and not conscious beings.
-6. **Deterministic foundations.** World bookkeeping is pure and replayable, with conserved credits and seeded randomness. Models are used where language and judgment add value.
+6. **Question the system, not only the answer.** Every Prime may question the framing, objective and rules of its task — including the Founder's question and the council's own design — while keeping physical laws and established facts fixed. It does so proportionately, names the assumption it challenges and what would settle it, and keeps minority views. The council can examine itself; what it proposes about itself is a record for the Founder, never applied automatically. See [BEYOND_THE_SYSTEM.md](BEYOND_THE_SYSTEM.md).
+7. **Deterministic foundations.** World bookkeeping is pure and replayable, with conserved credits and seeded randomness. Models are used where language and judgment add value.
 
 ## Path to the full vision
 
@@ -51,3 +52,4 @@ The millions of exchanges behind those decisions are not pushed at the Founder. 
 | Primes design new world rules and agent capabilities. Each change is proposed and reviewed, then applied only if the Founder approves. | Planned |
 | Calibrating the world against real-world data, with sourced facts only, to make it "like where we are" | Planned |
 | Research tools for Primes (untrusted retrieval, audited) | Planned |
+| Beyond the System: every Prime questions its framing; exploration mode, discovery records, recursive self-examination (proposals only) | Built (first slice) |

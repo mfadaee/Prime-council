@@ -1,14 +1,30 @@
 import "server-only";
 import { and, asc, desc, eq, gte, max, sql } from "drizzle-orm";
 import type { Db } from "@/lib/db/client";
-import { auditLog, contributions, councilSessions, members, memoryItems, providers, sessionEvents, usageRecords } from "@/lib/db/schema";
+import { auditLog, contributions, councilSessions, discoveries, members, memoryItems, providers, sessionEvents, usageRecords } from "@/lib/db/schema";
 import { priceFor, type PriceTable } from "@/lib/providers/pricing";
 import { ADAPTERS, providerStatus, resolveProvider, type ProviderRow } from "@/lib/providers/registry";
 import { getAutonomy, getCharter, getLimits, getPricing } from "@/lib/settings";
+import { toRecord } from "@/lib/discovery/record";
+import { describeCouncil, revisitContext } from "./beyond";
 import { newId, startOfUtcDay } from "@/lib/util";
 import { CouncilRun, emptyState, registerRun, runs, type OrchestratorDeps, type SessionState } from "./orchestrator";
 import { ensureSeeded } from "./seed";
-import type { Contribution, CritiqueSet, FinalAnswer, Interpretation, Limits, MemberProfile, PrimeAction, ProviderKind, Reply, RosterEntry } from "./types";
+import type {
+  Contribution,
+  CritiqueSet,
+  ExperimentPlan,
+  FinalAnswer,
+  Interpretation,
+  Limits,
+  MemberProfile,
+  PrimeAction,
+  ProviderKind,
+  Reply,
+  RosterEntry,
+  SessionMode,
+  SystemMap,
+} from "./types";
 
 export function demoForced(): boolean {
   return process.env.SIMLIFE_DEMO === "1" || process.env.SIMLIFE_DEMO === "true";
@@ -98,6 +114,31 @@ export interface StartOptions {
   origin?: "prime" | "suggestion" | "background" | "world" | "governance";
   worldDecisionId?: string | null;
   limitsOverride?: Partial<Limits>;
+  /** "beyond" runs a Beyond-the-System exploration. Default "standard". */
+  mode?: SessionMode;
+  /** Revisit an earlier discovery: its record becomes context and the new discovery links to it. */
+  parentDiscoveryId?: string | null;
+  /** Apply the exploration to the council itself (implies mode "beyond"). */
+  selfExamination?: boolean;
+}
+
+/** Context the Founder chose to include: the revisited discovery, or the council's own description. */
+async function sessionContext(db: Db, opts: StartOptions, roster: RosterEntry[], limits: Limits): Promise<string> {
+  const parts: string[] = [];
+  if (opts.parentDiscoveryId) {
+    const [row] = await db.select().from(discoveries).where(eq(discoveries.id, opts.parentDiscoveryId));
+    if (row) parts.push(revisitContext(toRecord(row)));
+  }
+  if (opts.selfExamination) parts.push(`How the council operates today (from its live configuration):\n${describeCouncil(roster, limits)}`);
+  return parts.join("\n\n");
+}
+
+/** How a stored suggestion asks to be run (suggestions.mode plus its basis). */
+export function suggestionStartOptions(s: { mode: string | null; basis: { kind: string; id: string }[] }): Pick<StartOptions, "mode" | "selfExamination" | "parentDiscoveryId"> {
+  const parent = s.basis.find((b) => b.kind === "discovery")?.id ?? null;
+  if (s.mode === "self_examination") return { mode: "beyond", selfExamination: true, parentDiscoveryId: parent };
+  if (s.mode === "beyond") return { mode: "beyond", parentDiscoveryId: parent };
+  return { mode: "standard" };
 }
 
 export async function startSession(db: Db, opts: StartOptions): Promise<{ id: string; run: CouncilRun }> {
@@ -112,17 +153,19 @@ export async function startSession(db: Db, opts: StartOptions): Promise<{ id: st
   const { daily, budget } = await budgetFor(db, limits, scope);
   const id = newId("ses");
   const simulated = roster.length > 0 && roster.every((m) => m.simulated);
+  const mode: SessionMode = opts.selfExamination || opts.parentDiscoveryId ? "beyond" : (opts.mode ?? "standard");
+  const context = mode === "beyond" ? await sessionContext(db, opts, roster, limits) : "";
   await db.insert(councilSessions).values({
     id,
     question: opts.question,
     status: "running",
     origin: opts.origin ?? "prime",
     simulated,
-    config: { limits, excluded: [], round: 0 },
+    config: { limits, excluded: [], round: 0, mode, context, parentDiscoveryId: opts.parentDiscoveryId ?? null, selfExamination: Boolean(opts.selfExamination) },
     roster,
     worldDecisionId: opts.worldDecisionId ?? null,
   });
-  await audit(db, scope === "background" ? "scheduler" : "prime", "session.start", id, { origin: opts.origin ?? "prime" });
+  await audit(db, scope === "background" ? "scheduler" : "prime", "session.start", id, { origin: opts.origin ?? "prime", mode, parentDiscoveryId: opts.parentDiscoveryId ?? null, selfExamination: Boolean(opts.selfExamination) });
   const run = new CouncilRun({
     deps: { db, resolve: makeResolver(providerRows, pricing), scope },
     sessionId: id,
@@ -131,6 +174,10 @@ export async function startSession(db: Db, opts: StartOptions): Promise<{ id: st
     limits,
     memory,
     charter: await getCharter(db),
+    mode,
+    context,
+    parentDiscoveryId: opts.parentDiscoveryId ?? null,
+    selfExamination: Boolean(opts.selfExamination),
     budget,
     dailySpent: daily,
   });
@@ -145,6 +192,10 @@ export async function loadState(db: Db, sessionId: string, row: typeof councilSe
   for (const c of rows) {
     st.round = Math.max(st.round, c.round);
     if (c.kind === "interpretation") st.interpretation = c.content as Interpretation;
+    else if (c.kind === "system_map") {
+      st.map = c.content as SystemMap;
+      st.interpretation = st.map;
+    } else if (c.kind === "experiment") st.experiment = { memberId: c.memberId, plan: c.content as ExperimentPlan };
     else if (c.kind === "contribution") {
       st.initial.set(c.memberId, c.content as Contribution);
       st.latest.set(c.memberId, c.content as Contribution);
@@ -166,7 +217,7 @@ export async function getRun(db: Db, sessionId: string): Promise<CouncilRun | nu
   if (live) return live;
   const [row] = await db.select().from(councilSessions).where(eq(councilSessions.id, sessionId));
   if (!row) return null;
-  const cfg = row.config as { limits: Limits; excluded?: string[] };
+  const cfg = row.config as { limits: Limits; excluded?: string[]; mode?: SessionMode; context?: string; parentDiscoveryId?: string | null; selfExamination?: boolean };
   const limits = { ...(await getLimits(db)), ...cfg.limits, hardMaxRounds: cfg.limits.hardMaxRounds };
   const providerRows = await loadProviders(db);
   const pricing = await getPricing(db);
@@ -181,6 +232,10 @@ export async function getRun(db: Db, sessionId: string): Promise<CouncilRun | nu
     limits,
     memory: await memoryContext(db),
     charter: await getCharter(db),
+    mode: cfg.mode ?? "standard",
+    context: cfg.context ?? "",
+    parentDiscoveryId: cfg.parentDiscoveryId ?? null,
+    selfExamination: Boolean(cfg.selfExamination),
     budget,
     sessionSpent: row.costUsd,
     dailySpent: daily,
@@ -254,6 +309,7 @@ export async function listSessions(db: Db, limit = 50) {
       status: councilSessions.status,
       origin: councilSessions.origin,
       simulated: councilSessions.simulated,
+      mode: sql<string | null>`${councilSessions.config}->>'mode'`,
       costUsd: councilSessions.costUsd,
       inputTokens: councilSessions.inputTokens,
       outputTokens: councilSessions.outputTokens,

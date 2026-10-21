@@ -9,6 +9,7 @@ import { api, formatUsd } from "@/lib/client/api";
 const NAV = [
   { href: "/", label: "Council" },
   { href: "/sessions", label: "Sessions" },
+  { href: "/discoveries", label: "Discoveries" },
   { href: "/members", label: "Primes" },
   { href: "/memory", label: "Memory" },
   { href: "/world", label: "World" },

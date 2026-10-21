@@ -1,3 +1,4 @@
+import type { BeyondInput } from "./beyond";
 /**
  * Pure event → view-state reducer. The live chamber and session replay both
  * render ONLY what this derives from recorded events, so every animation on
@@ -5,15 +6,20 @@
  */
 import type {
   Contribution,
+  CritiqueSet,
+  ExperimentPlan,
   FinalAnswer,
   Limits,
   MemberState,
   MessageKind,
   Phase,
+  Reply,
   RosterEntry,
+  SessionMode,
   SessionStatus,
   Stance,
   StoredEvent,
+  SystemMap,
   UsageInfo,
 } from "./types";
 
@@ -52,6 +58,9 @@ export interface ChamberState {
   question: string;
   status: SessionStatus | "idle";
   simulated: boolean;
+  mode: SessionMode;
+  /** Set when a Beyond-the-System session's discovery record was written. */
+  discoveryId: string | null;
   roster: RosterEntry[];
   limits: Limits | null;
   memberStates: Record<string, { state: MemberState; detail?: string; seq: number }>;
@@ -80,6 +89,8 @@ export function initialChamber(): ChamberState {
     question: "",
     status: "idle",
     simulated: false,
+    mode: "standard",
+    discoveryId: null,
     roster: [],
     limits: null,
     memberStates: {},
@@ -104,9 +115,11 @@ export function initialChamber(): ChamberState {
 
 const PHASE_LABEL: Record<Phase, string> = {
   interpret: "Interpreting the request",
+  map: "Mapping the current system",
   independent: "Independent contributions",
   critique: "Critique",
   resolve: "Resolving disagreements",
+  experiment: "Designing an experiment",
   synthesize: "Synthesis",
   direct: "Direct address",
 };
@@ -126,6 +139,7 @@ export function reduce(s: ChamberState, e: StoredEvent): ChamberState {
       next.roster = e.roster;
       next.limits = e.limits;
       next.simulated = e.simulated;
+      next.mode = e.mode ?? "standard";
       next.status = "running";
       next.startedAt = e.at;
       next.memberStates = Object.fromEntries(e.roster.map((m) => [m.id, { state: m.enabled ? "idle" : "offline", seq: e.seq }]));
@@ -206,6 +220,10 @@ export function reduce(s: ChamberState, e: StoredEvent): ChamberState {
       next.override = { decision: e.decision, note: e.note };
       next.notes = [...s.notes, { seq: e.seq, at: e.at, tone: "prime", text: "The Founder overrode the council's decision" }];
       break;
+    case "discovery.recorded":
+      next.discoveryId = e.discoveryId;
+      next.notes = [...s.notes, { seq: e.seq, at: e.at, tone: "info", text: "Investigation kept as a discovery record" }];
+      break;
     case "session.ended":
       next.status = e.status;
       next.endedAt = e.at;
@@ -227,4 +245,19 @@ export function reduceAll(events: StoredEvent[], upTo = Infinity): ChamberState 
     s = reduce(s, e);
   }
   return s;
+}
+
+/** Beyond-the-System material as published in this session (input for buildBeyondView). */
+export function beyondInput(s: ChamberState): BeyondInput {
+  const of = <T,>(kind: ChamberMessage["kind"]) => s.messages.filter((m) => m.kind === kind) as (ChamberMessage & { content: T })[];
+  const map = of<SystemMap>("system_map").at(-1)?.content ?? null;
+  const exp = of<ExperimentPlan>("experiment").at(-1);
+  return {
+    map,
+    contributions: of<Contribution>("contribution").map((m) => ({ memberId: m.memberId, contribution: m.content })),
+    critiques: of<CritiqueSet>("critique").map((m) => ({ from: m.memberId, round: m.round, set: m.content })),
+    replies: of<Reply>("reply").map((m) => ({ member: m.memberId, round: m.round, reply: m.content })),
+    experiment: exp ? { memberId: exp.memberId, plan: exp.content } : null,
+    final: s.final,
+  };
 }

@@ -1,8 +1,10 @@
 import "server-only";
-import { and, desc, eq, inArray } from "drizzle-orm";
+import { and, desc, eq, gte, inArray } from "drizzle-orm";
 import { z } from "zod";
 import type { Db } from "@/lib/db/client";
-import { councilSessions, members, memoryItems, suggestions } from "@/lib/db/schema";
+import { councilSessions, discoveries, members, memoryItems, suggestions } from "@/lib/db/schema";
+import { selfExaminationQuestion } from "@/lib/council/beyond";
+import type { FollowUp } from "@/lib/discovery/types";
 import { extractJsonObject } from "@/lib/council/parse";
 import { untrusted } from "@/lib/council/prompts";
 import { singleCall } from "@/lib/council/single-call";
@@ -80,8 +82,59 @@ export async function ruleSuggestions(db: Db, max = 3) {
       proposedBy: skeptic,
     });
   }
+  // Follow-ups the Founder approved on a discovery become Beyond-the-System topics
+  // that build on that investigation (it is passed to the new session as context).
+  const found = await db.select().from(discoveries).orderBy(desc(discoveries.updatedAt)).limit(20);
+  const chair = await memberIdForRole(db, "chair");
+  for (const d of found) {
+    for (const f of d.followUps as FollowUp[]) {
+      if (created.length >= room) break;
+      if (f.kind !== "investigate" || f.status !== "approved" || used.has(`followup:${d.id}:${f.id}`)) continue;
+      created.push({
+        id: newId("sug"),
+        question: f.text,
+        reason: `You approved this follow-up from the investigation “${d.question.slice(0, 100)}”.`,
+        basis: [
+          { kind: "discovery", id: d.id, label: d.question.slice(0, 80) },
+          { kind: "followup", id: `${d.id}:${f.id}`, label: f.text.slice(0, 80) },
+        ],
+        proposedBy: chair,
+        mode: "beyond",
+        simulated: d.simulated,
+      });
+    }
+  }
+
   if (!created.length) return [];
   return db.insert(suggestions).values(created).returning();
+}
+
+/**
+ * Recursive self-examination on a cadence the Founder chose (opt-in). Queues at most
+ * one scheduled self-examination per `days`; returns it, or null when one is recent.
+ */
+export async function queueSelfExamination(db: Db, days: number, now = new Date()) {
+  if (days <= 0) return null;
+  const since = new Date(now.getTime() - days * 86_400_000);
+  const [recent] = await db
+    .select({ id: suggestions.id })
+    .from(suggestions)
+    .where(and(eq(suggestions.mode, "self_examination"), gte(suggestions.createdAt, since)))
+    .limit(1);
+  if (recent) return null;
+  const [row] = await db
+    .insert(suggestions)
+    .values({
+      id: newId("sug"),
+      question: selfExaminationQuestion(),
+      reason: `Self-examination every ${days} day(s), as you set in Settings: the council applies its own principles to how it operates. It may conclude that no change is needed.`,
+      basis: [{ kind: "council", id: `cadence:${now.toISOString().slice(0, 10)}`, label: "How the council operates" }],
+      proposedBy: await memberIdForRole(db, "chair"),
+      status: "scheduled",
+      mode: "self_examination",
+    })
+    .returning();
+  return row;
 }
 
 const modelOut = z.object({

@@ -163,8 +163,50 @@ export const suggestions = pgTable("suggestions", {
   status: text("status").notNull().default("queued"), // queued | accepted | dismissed | done
   sessionId: text("session_id"),
   simulated: boolean("simulated").notNull().default(false),
+  /** Session mode to run it in (null = standard). */
+  mode: text("mode"),
   createdAt: createdAt(),
 });
+
+/**
+ * A Beyond-the-System investigation, kept so the council can revisit it weeks or
+ * months later and build on it. One row per exploration session (updated when the
+ * session is continued). Every alternative is kept, including withdrawn and losing
+ * ones — a discovery does not disappear because it did not win the first debate.
+ * Shapes live in src/lib/discovery/types.ts.
+ */
+export const discoveries = pgTable(
+  "discoveries",
+  {
+    id: text("id").primaryKey(),
+    sessionId: text("session_id").notNull(),
+    /** The investigation this one revisits, if any. */
+    parentId: text("parent_id"),
+    scope: text("scope").notNull().default("question"), // question | council (self-examination)
+    status: text("status").notNull().default("open"), // DiscoveryStatus
+    question: text("question").notNull(),
+    framing: text("framing").notNull().default(""),
+    existingSystem: jsonb("existing_system").notNull().default({}),
+    assumptions: jsonb("assumptions").notNull().default([]),
+    constraints: jsonb("constraints").$type<string[]>().notNull().default([]),
+    alternatives: jsonb("alternatives").notNull().default([]),
+    checks: jsonb("checks").notNull().default([]),
+    answer: text("answer").notNull().default(""),
+    evidence: jsonb("evidence").notNull().default([]),
+    confidence: doublePrecision("confidence"),
+    uncertainty: jsonb("uncertainty").$type<string[]>().notNull().default([]),
+    minorityViews: jsonb("minority_views").$type<string[]>().notNull().default([]),
+    experiment: jsonb("experiment"),
+    lessons: jsonb("lessons").$type<string[]>().notNull().default([]),
+    followUps: jsonb("follow_ups").notNull().default([]),
+    /** Lower-cased text for search. */
+    searchText: text("search_text").notNull().default(""),
+    simulated: boolean("simulated").notNull().default(false),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [uniqueIndex("discoveries_session_idx").on(t.sessionId), index("discoveries_updated_idx").on(t.updatedAt)],
+);
 
 /** Audit trail for tool use, world-changing actions, settings and Founder overrides. */
 export const auditLog = pgTable(

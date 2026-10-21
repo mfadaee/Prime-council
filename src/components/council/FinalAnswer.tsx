@@ -122,6 +122,16 @@ export function FinalAnswerPanel({
             ) : (
               <p className="text-faint">None stated.</p>
             )}
+            {final.minorityViews && final.minorityViews.length > 0 && (
+              <>
+                <h3 className="mb-1.5 mt-3 text-xs font-bold uppercase tracking-wider text-reply">Minority views kept</h3>
+                <ul className="list-disc space-y-0.5 pl-4">
+                  {final.minorityViews.map((u, i) => (
+                    <li key={i}>{u}</li>
+                  ))}
+                </ul>
+              </>
+            )}
             {final.disagreements.length > 0 && (
               <>
                 <h3 className="mb-1.5 mt-3 text-xs font-bold uppercase tracking-wider text-challenge">Unresolved disagreement</h3>

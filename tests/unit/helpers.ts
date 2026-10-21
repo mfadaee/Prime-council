@@ -2,7 +2,7 @@ import { createTestDb, type Db } from "@/lib/db/client";
 import { councilSessions, sessionEvents } from "@/lib/db/schema";
 import { asc, eq } from "drizzle-orm";
 import { CouncilRun, type ResolvedMember } from "@/lib/council/orchestrator";
-import { DEFAULT_LIMITS, type CouncilRole, type Limits, type RosterEntry, type StoredEvent } from "@/lib/council/types";
+import { DEFAULT_LIMITS, type CouncilRole, type Limits, type RosterEntry, type SessionMode, type StoredEvent } from "@/lib/council/types";
 import { ProviderError, type GenerateRequest, type ProviderAdapter } from "@/lib/providers/types";
 import { demoOutput } from "@/lib/providers/adapters/demo";
 
@@ -16,6 +16,7 @@ export interface Call {
   memberId: string;
   phase: string;
   prompt: string;
+  system: string;
   aborted: boolean;
 }
 
@@ -29,7 +30,7 @@ export function fakeAdapter(behaviour: (memberId: string, phase: string) => Beha
     async generate(p, req) {
       const memberId = p.id; // tests give every member its own provider id
       const phase = req.hint?.phase ?? "direct";
-      const call: Call = { memberId, phase, prompt: req.messages[0].content, aborted: false };
+      const call: Call = { memberId, phase, prompt: req.messages[0].content, system: req.system, aborted: false };
       calls.push(call);
       req.signal.addEventListener("abort", () => (call.aborted = true), { once: true });
       const b = behaviour(memberId, phase);
@@ -86,6 +87,9 @@ export async function makeRun(
     price?: { inputPerM: number; outputPerM: number } | null;
     dailySpent?: number;
     unavailable?: string[];
+    mode?: SessionMode;
+    selfExamination?: boolean;
+    context?: string;
   },
 ) {
   const r = opts.roster ?? roster();
@@ -107,6 +111,9 @@ export async function makeRun(
     roster: r,
     limits,
     memory: [],
+    mode: opts.mode,
+    selfExamination: opts.selfExamination,
+    context: opts.context,
     budget: { sessionBudgetUsd: limits.sessionBudgetUsd, dailyBudgetUsd: limits.dailyBudgetUsd, allowUnpriced: limits.allowUnpriced },
     dailySpent: opts.dailySpent ?? 0,
   });

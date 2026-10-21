@@ -52,7 +52,19 @@ export const MEMBER_STATES: MemberState[] = [
   "offline",
 ];
 
-export type Phase = "interpret" | "independent" | "critique" | "resolve" | "synthesize" | "direct";
+export type Phase = "interpret" | "map" | "independent" | "critique" | "resolve" | "experiment" | "synthesize" | "direct";
+
+/**
+ * How a session deliberates.
+ * - standard: the usual pipeline. Every member still carries the BeyondTheSystem
+ *   lens and may question the framing when it materially matters.
+ * - beyond: "Beyond the System" exploration. The Chair maps the current system and
+ *   its assumptions, members generate structurally different alternatives, the
+ *   council attacks them, one member designs the smallest reversible experiment,
+ *   and the result is kept as a discovery record.
+ */
+export const SESSION_MODES = ["standard", "beyond"] as const;
+export type SessionMode = (typeof SESSION_MODES)[number];
 
 export type SessionStatus = "running" | "completed" | "stopped" | "failed";
 
@@ -118,12 +130,110 @@ export interface Interpretation {
   successCriteria: string[];
 }
 
+// ------------------------------------------------- BeyondTheSystem lens ---
+
+/**
+ * constraint  – physical, logical, mathematical or empirically established; not removable by redesign
+ * convention  – exists because people created it (a rule, category, incentive, metric); changeable, though it may still encode real knowledge
+ * uncertain   – treated as true without sufficient evidence either way
+ */
+export const ASSUMPTION_KINDS = ["constraint", "convention", "uncertain"] as const;
+export type AssumptionKind = (typeof ASSUMPTION_KINDS)[number];
+
+/** The five layers every member examines (alternatives are the fifth). */
+export const FRAME_LAYERS = ["reality", "assumption", "constructed", "boundary"] as const;
+export type FrameLayer = (typeof FRAME_LAYERS)[number];
+
+export interface FramedAssumption {
+  /** Assigned in code for system maps ("A1", "A2", ...); absent on member-level frame checks. */
+  id?: string;
+  statement: string;
+  kind: AssumptionKind;
+  layer?: FrameLayer;
+  /** Evidence or reasoning behind the classification. */
+  basis: string;
+  /** Does it materially affect the decision? */
+  matters: boolean;
+}
+
+/** A member's decision about whether to question the framing of its task. */
+export interface FrameCheck {
+  challenged: boolean;
+  /** Why questioning the framing is, or is not, worth it here. */
+  reason: string;
+  assumptions: FramedAssumption[];
+  /** Where the stated objective may be a proxy for the outcome that matters. */
+  proxyRisk?: string;
+  /** A different framing of the problem, if one is worth considering. */
+  reframe?: string;
+}
+
+/** Stage A–B output: the current system and the assumptions that sustain it. */
+export interface SystemMap extends Interpretation {
+  currentSystem: string;
+  produces: string;
+  whyExists: string;
+  assumptions: FramedAssumption[];
+  /** Possibilities excluded by the current framing. */
+  boundaries: string[];
+  /** Incentives that distort behaviour; processes that became ends in themselves. */
+  distortions: string[];
+}
+
+/**
+ * implementation – a better way to run the current solution
+ * redesign       – the system rebuilt from first principles
+ * reframe        – changes the problem being solved
+ */
+export const ALTERNATIVE_LEVELS = ["implementation", "redesign", "reframe"] as const;
+export type AlternativeLevel = (typeof ALTERNATIVE_LEVELS)[number];
+
+export interface Alternative {
+  /** Assigned in code when published: "<memberId>#<n>". Never taken from model output. */
+  id: string;
+  title: string;
+  description: string;
+  level: AlternativeLevel;
+  /** System-map assumption ids this alternative drops. */
+  removes: string[];
+  /** Constraints it explicitly respects. */
+  keeps: string[];
+}
+
+export interface ExperimentPlan {
+  /** False when no experiment is worth running; `reason` says why. */
+  justified: boolean;
+  reason: string;
+  alternativeId: string | null;
+  hypothesis: string;
+  expectedObservations: string[];
+  cost: string;
+  risks: string[];
+  successCriteria: string[];
+  stopConditions: string[];
+  reversible: boolean;
+}
+
+export const CHANGE_TARGETS = ["prompts", "roles", "orchestration", "evaluation", "memory", "interface", "limits", "security"] as const;
+export type ChangeTarget = (typeof CHANGE_TARGETS)[number];
+
+/** A change the council proposes to its own operation. A proposal only — never applied by code. */
+export interface ProposedChange {
+  target: ChangeTarget;
+  change: string;
+  why: string;
+}
+
 export interface Contribution {
   answer: string;
   rationale: string;
   evidence: EvidenceItem[];
   assumptions: string[];
   confidence: number; // 0..1, self-reported
+  /** BeyondTheSystem lens: present when the member considered the framing. */
+  frameCheck?: FrameCheck;
+  /** Beyond mode: alternatives this member originated (ids assigned in code). */
+  alternatives?: Alternative[];
 }
 
 export type Stance = "challenge" | "support" | "refine";
@@ -134,6 +244,14 @@ export interface Critique {
   stance: Stance;
   reason: string;
   evidence?: string;
+  /** The assumption this critique challenges (productive disagreement names it). */
+  assumption?: string;
+  /** Evidence or experiment that would settle the disagreement. */
+  resolveBy?: string;
+  /** Beyond mode: the alternative this critique is about (validated in code). */
+  alternativeId?: string;
+  /** Beyond mode: does the alternative actually escape the original framing? */
+  escapesFraming?: boolean;
 }
 
 export interface CritiqueSet {
@@ -141,10 +259,18 @@ export interface CritiqueSet {
   overall: "agree" | "partly" | "disagree";
 }
 
+export interface AlternativeUpdate {
+  id: string;
+  action: "keep" | "revise" | "withdraw";
+  note: string;
+}
+
 export interface Reply {
   response: "revise" | "defend" | "concede";
   updatedAnswer: string;
   reason: string;
+  /** Beyond mode: what happens to this member's own alternatives after critique. */
+  alternativeUpdates?: AlternativeUpdate[];
 }
 
 export interface FinalAnswer {
@@ -154,6 +280,16 @@ export interface FinalAnswer {
   disagreements: string[];
   deliberationEffect: string;
   confidence: number;
+  /** Views that did not prevail but should not be lost. */
+  minorityViews?: string[];
+  /** Beyond mode (stage G). */
+  learned?: string[];
+  nextQuestions?: string[];
+  /** True when the council concluded the conventional approach is already best. */
+  conventionalIsBest?: boolean;
+  framingVerdict?: string;
+  /** Changes the council proposes to its own operation (self-examination). */
+  proposedChanges?: ProposedChange[];
 }
 
 export interface DirectReply {
@@ -162,6 +298,8 @@ export interface DirectReply {
 
 export type MessageKind =
   | "interpretation"
+  | "system_map"
+  | "experiment"
   | "contribution"
   | "critique"
   | "reply"
@@ -178,7 +316,7 @@ export interface UsageInfo {
 // ------------------------------------------------------------------ events ---
 
 export type CouncilEvent =
-  | { type: "session.started"; question: string; roster: RosterEntry[]; limits: Limits; simulated: boolean }
+  | { type: "session.started"; question: string; roster: RosterEntry[]; limits: Limits; simulated: boolean; mode?: SessionMode }
   | { type: "phase.started"; phase: Phase; round: number; memberIds: string[] }
   | { type: "member.state"; memberId: string; state: MemberState; detail?: string }
   | {
@@ -207,6 +345,7 @@ export type CouncilEvent =
   | { type: "prime.intervention"; action: PrimeAction["type"]; detail: Record<string, unknown> }
   | { type: "session.final"; final: FinalAnswer; initialAnswer: Contribution | null; synthesizerId: string | null }
   | { type: "session.override"; decision: string; note?: string }
+  | { type: "discovery.recorded"; discoveryId: string }
   | { type: "session.ended"; status: SessionStatus; reason?: string };
 
 export type StoredEvent = CouncilEvent & { seq: number; at: string; simulated: boolean };

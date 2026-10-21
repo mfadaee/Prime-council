@@ -23,7 +23,7 @@ export interface GenerateRequest {
   timeoutMs: number;
   signal: AbortSignal;
   /** Hints used only by the demo adapter to produce labelled simulated output. */
-  hint?: { phase: string; role: string; memberName: string; question: string; targets?: { id: string; name: string }[] };
+  hint?: { phase: string; role: string; memberName: string; question: string; mode?: string; targets?: { id: string; name: string }[] };
 }
 
 export interface GenerateResult {

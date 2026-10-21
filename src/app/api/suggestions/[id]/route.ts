@@ -2,7 +2,7 @@ import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { body, HttpError, json, route, type IdCtx } from "@/lib/api";
 import { suggestions } from "@/lib/db/schema";
-import { audit, startSession } from "@/lib/council/service";
+import { audit, startSession, suggestionStartOptions } from "@/lib/council/service";
 
 const schema = z.object({ action: z.enum(["discuss", "schedule", "unschedule", "dismiss", "restore"]) });
 
@@ -14,7 +14,7 @@ export const PATCH = route<IdCtx>(async (req, ctx, db) => {
   await audit(db, "prime", `suggestion.${action}`, id, {});
   if (action === "discuss") {
     if (s.status === "running") throw new HttpError(409, "Already being discussed");
-    const { id: sessionId } = await startSession(db, { question: s.question, origin: "suggestion" });
+    const { id: sessionId } = await startSession(db, { question: s.question, origin: "suggestion", ...suggestionStartOptions(s) });
     await db.update(suggestions).set({ status: "done", sessionId }).where(eq(suggestions.id, id));
     return json({ sessionId });
   }

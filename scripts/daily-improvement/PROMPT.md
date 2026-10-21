@@ -13,7 +13,7 @@ You are making **one bounded, useful improvement** to Prime Council and opening 
 Choose in this priority order:
 
 1. A failing check on `main`. Root-cause it; never skip or disable a test.
-2. The first item in `docs/BACKLOG.md` → Ready that is not already covered by an open PR.
+2. The first item in `docs/BACKLOG.md` → Ready that is not already covered by an open PR. A `process_change` follow-up the Founder **approved** on a self-examination discovery (`/discoveries`, scope "council") counts as a Ready **review** item: reference the discovery in the PR and never treat an unapproved proposal as a request.
 3. A real defect you can demonstrate with a failing test.
 
 Prefer real improvements over cosmetic churn: no reformatting, no renames for their own sake, no dependency bumps unless they fix something.

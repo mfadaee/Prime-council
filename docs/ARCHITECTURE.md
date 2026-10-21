@@ -14,7 +14,8 @@ Browser ── fetch/SSE ──► Route handlers (/api/*) ──► Services �
 |---|---|---|
 | Access | `src/proxy.ts`, `src/lib/api.ts` | Loopback-only or token auth; CSRF header; rate limits; validation; JSON errors |
 | Services | `src/lib/council/service.ts`, `src/lib/settings.ts` | Build rosters, resolve providers and prices, start/continue sessions, apply Prime actions |
-| Council engine | `src/lib/council/orchestrator.ts` | Bounded deliberation pipeline, budget guard, concurrency, retries, cancellation, events |
+| Council engine | `src/lib/council/orchestrator.ts` | Bounded deliberation pipeline (standard and Beyond the System), budget guard, concurrency, retries, cancellation, events |
+| Beyond the System | `src/lib/council/beyond.ts`, `src/lib/discovery/*` | Pure validation and view of explorations; discovery records, search, linking, revisits |
 | Providers | `src/lib/providers/*` | One adapter per API kind behind `ProviderAdapter`; status checks; pricing |
 | Persistence | `src/lib/db/*`, `drizzle/` | Drizzle schema; node-postgres or embedded PGlite; auto-migrations |
 | Live delivery | `src/lib/council/bus.ts`, `/api/sessions/:id/stream` | In-process pub/sub plus a resumable SSE stream |
@@ -29,6 +30,21 @@ interpret (Chair)
   → [critique → resolve] × rounds   (stops early when no material challenge remains)
   → synthesize (Synthesizer)
 ```
+
+### Beyond the System mode
+
+`mode: "beyond"` runs the same bounded pipeline with different prompts and two extra phases (all limits and cancellation apply unchanged):
+
+```
+map (Chair: current system + classified assumptions)
+  → independent (alternatives: implementation | redesign | reframe, blind)
+  → [critique → resolve] × rounds   (alternatives attacked; originators keep, revise or withdraw)
+  → experiment (smallest reversible experiment — designed, never run)
+  → synthesize (learned, next questions, minority views)
+  → discovery record
+```
+
+Every member, in every mode, carries the BeyondTheSystem lens in its system prompt. Validation (ids, references, constraint removal, near-duplicates, quality checks) lives in `src/lib/council/beyond.ts`. See [BEYOND_THE_SYSTEM.md](BEYOND_THE_SYSTEM.md).
 
 - **Independence.** Initial prompts contain only the question, the Chair's interpretation and approved memory. Tests check that no member sees another's answer before critique.
 - **Critique targets** are validated: self-targets and unknown members are dropped, and names are mapped to ids.
@@ -48,7 +64,7 @@ interpret (Chair)
 
 Defined in `src/lib/council/types.ts` (`CouncilEvent`), each with a gap-free per-session `seq`:
 
-`session.started`, `phase.started`, `member.state`, `member.message`, `member.link`, `member.error`, `budget.blocked`, `usage.updated`, `prime.intervention`, `session.final`, `session.override`, `session.ended`.
+`session.started` (with `mode`), `phase.started`, `member.state`, `member.message`, `member.link`, `member.error`, `budget.blocked`, `usage.updated`, `prime.intervention`, `session.final`, `session.override`, `discovery.recorded`, `session.ended`.
 
 Every event is first inserted into `session_events`, then published. The SSE route subscribes first, replays from the database after `?after=`/`Last-Event-ID`, then flushes buffered live events. This means there are no gaps and no duplicates. The reducer is idempotent on `seq`.
 
@@ -77,7 +93,8 @@ Every event is first inserted into `session_events`, then published. The SSE rou
 | `contributions` | Published member output (rebuilds state for continuation) |
 | `usage_records` | Every call's tokens, cost estimate, outcome, scope |
 | `settings` | Limits, autonomy, pricing |
-| `memory_items`, `suggestions` | Approved memory; suggested discussions |
+| `memory_items`, `suggestions` | Approved memory; suggested discussions (`mode`: standard, beyond or self_examination) |
+| `discoveries` | Beyond-the-System investigations: map, assumptions and their fate, every alternative with originator and stands, checks, experiment and results, lessons, follow-ups, revisit lineage |
 | `audit_log` | Prime actions, configuration changes, scheduler and world actions |
 | `worlds`, `world_events`, `world_ticks`, `world_snapshots` | Simulation state, event log, per-tick history, snapshots |
 

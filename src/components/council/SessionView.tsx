@@ -1,12 +1,15 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api, formatDuration, formatTokens, formatUsd } from "@/lib/client/api";
-import { phaseLabel, reduceAll } from "@/lib/council/reducer";
-import type { StoredEvent } from "@/lib/council/types";
+import { buildBeyondView } from "@/lib/council/beyond";
+import { beyondInput, phaseLabel, reduceAll } from "@/lib/council/reducer";
+import type { Phase, StoredEvent } from "@/lib/council/types";
 import { Dialog } from "@/components/ui/Dialog";
 import { Avatar } from "./Avatar";
+import { BeyondPanel } from "./BeyondPanel";
 import { Chamber, type SeatMember, type Speech } from "./Chamber";
 import { excerptOf, MessageDetails } from "./content";
 import { FinalAnswerPanel } from "./FinalAnswer";
@@ -21,11 +24,13 @@ interface SessionRecord {
   origin: string;
   simulated: boolean;
   worldDecisionId: string | null;
+  config?: { selfExamination?: boolean };
 }
 
 type DialogKind = null | "challenge" | "direct" | "override";
 
 export function SessionView({ sessionId }: { sessionId: string }) {
+  const router = useRouter();
   const [session, setSession] = useState<SessionRecord | null>(null);
   const [events, setEvents] = useState<StoredEvent[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -74,6 +79,11 @@ export function SessionView({ sessionId }: { sessionId: string }) {
   const full = useMemo(() => reduceAll(events), [events]);
   const view = useMemo(() => (cursor === null ? full : reduceAll(events, cursor)), [events, cursor, full]);
   const running = full.status === "running";
+  const beyond = useMemo(() => (view.mode === "beyond" ? buildBeyondView(beyondInput(view)) : null), [view]);
+  const reached = useMemo(
+    () => new Set(events.filter((e) => e.type === "phase.started" && (cursor === null || e.seq <= cursor)).map((e) => (e as { phase: Phase }).phase)),
+    [events, cursor],
+  );
 
   useEffect(() => {
     if (!running) return;
@@ -116,6 +126,19 @@ export function SessionView({ sessionId }: { sessionId: string }) {
     if (!m) return null;
     return { memberId: m.memberId, kindLabel: KIND_LABEL[m.kind], excerpt: excerptOf(m, nameOf), simulated: m.simulated };
   }, [view.speaking, view.messages, nameOf]);
+
+  /** Open a Beyond-the-System exploration of this session's question. */
+  const exploreBeyond = async () => {
+    setBusy(true);
+    setNotice(null);
+    try {
+      const { id } = await api<{ id: string }>("/api/sessions", { body: { question: full.question || session?.question, mode: "beyond" } });
+      router.push(`/sessions/${id}`);
+    } catch (e) {
+      setNotice(e instanceof Error ? e.message : String(e));
+      setBusy(false);
+    }
+  };
 
   const act = async (body: Record<string, unknown>, okMsg?: string) => {
     setBusy(true);
@@ -161,6 +184,11 @@ export function SessionView({ sessionId }: { sessionId: string }) {
         <div className="min-w-0 flex-1">
           <p className="text-xs font-semibold uppercase tracking-wider text-prime">
             {session.origin === "governance" ? "The Primes decide (Prime governance)" : session.origin === "background" ? "The Primes discuss (background)" : "The Founder asks"}
+            {full.mode === "beyond" && (
+              <span className="chip ml-2 border-prime/60 !text-[10px] normal-case tracking-normal" title="Beyond the System: question the framing, map assumptions, generate alternatives, design an experiment">
+                ⟁ Beyond the System{session.config?.selfExamination ? " · self-examination" : ""}
+              </span>
+            )}
           </p>
           <h1 className="mt-1 font-display text-lg font-bold leading-snug sm:text-xl">{full.question || session.question}</h1>
         </div>
@@ -225,6 +253,16 @@ export function SessionView({ sessionId }: { sessionId: string }) {
               <button className="btn btn-sm btn-prime" disabled={busy || running} onClick={() => (setText(""), setDialog("override"))}>
                 ♛ Override
               </button>
+              {full.mode !== "beyond" && (
+                <button
+                  className="btn btn-sm"
+                  disabled={busy || running || !full.question}
+                  onClick={exploreBeyond}
+                  title="Start a new exploration of this question that maps its assumptions, generates structurally different alternatives and designs an experiment"
+                >
+                  ⟁ Explore beyond the system
+                </button>
+              )}
             </div>
             {notice && (
               <p className="mt-2 text-xs text-muted" role="status">
@@ -279,6 +317,21 @@ export function SessionView({ sessionId }: { sessionId: string }) {
                 aria-label="Replay position"
               />
             </section>
+          )}
+
+          {beyond && (
+            <BeyondPanel
+              view={beyond}
+              map={beyondInput(view).map}
+              final={view.final}
+              members={members}
+              nameOf={nameOf}
+              phase={view.phase}
+              status={view.status}
+              discoveryId={view.discoveryId}
+              simulated={full.simulated}
+              reached={reached}
+            />
           )}
 
           <FinalAnswerPanel
