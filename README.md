@@ -177,7 +177,7 @@ Contributions are welcome, from people and from coding agents alike. Read [CONTR
 ## Security model
 
 - **Local-first.** Servers bind to `127.0.0.1`, and the proxy refuses requests addressed to any non-loopback host unless `SIMLIFE_ACCESS_TOKEN` is set. This also defeats DNS rebinding.
-- **Remote access.** Before exposing the app, set `SIMLIFE_ACCESS_TOKEN`. The Prime then signs in at `/login` and receives an httpOnly cookie; API clients can send `Authorization: Bearer <token>`.
+- **Remote access.** Before exposing the app, set `SIMLIFE_ACCESS_TOKEN`. The Founder then signs in at `/login` and receives an httpOnly cookie; API clients can send `Authorization: Bearer <token>`.
 - **Write protection.** All writes require the `x-simlife-request: 1` header, which cross-site pages cannot send without a CORS preflight. Writes are also rate-limited, and model-calling actions have a tighter limit.
 - **Keys.** Keys live only in the server environment. The database stores the *name* of each key's variable, and responses only say whether a key is present. Provider errors are redacted.
 - **Untrusted content.** Member output, imported content and retrieved pages are wrapped as untrusted data in prompts. Members can only return whitelisted JSON fields. Limits, permissions and spending are enforced in code, so text cannot change them.
