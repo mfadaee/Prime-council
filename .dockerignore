@@ -1,0 +1,14 @@
+.git
+node_modules
+.next
+.data
+test-results
+playwright-report
+coverage
+.daily
+*.tsbuildinfo
+next-env.d.ts
+npm-debug.log*
+# Never copy keys into an image.
+.env*
+!.env.example

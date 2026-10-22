@@ -1,9 +1,40 @@
-# Optional local PostgreSQL. The app also runs without it (embedded PGlite).
+# One-command start (demo mode, embedded database, no keys needed):
+#   docker compose up --build          # then open http://localhost:3000
+#
+# Real models: put keys in .env.local (see .env.example) and run the same command.
+#
+# Optional local PostgreSQL for `npm run dev` (only starts when named):
 #   docker compose up -d db
 #   DATABASE_URL=postgres://simlife:simlife@localhost:5432/simlife npm run dev
 services:
+  app:
+    build: .
+    image: prime-council:local
+    # Host loopback only. Browsers then address the app as localhost:3000, which
+    # the local-only check in src/proxy.ts accepts. Before publishing on another
+    # interface, set SIMLIFE_ACCESS_TOKEN (see README → Remote access).
+    ports:
+      - "127.0.0.1:3000:3000"
+    env_file:
+      - path: .env.local
+        required: false
+    environment:
+      PGLITE_DIR: /data/pglite
+      # The container uses its embedded database. A DATABASE_URL in .env.local
+      # usually points at the host's localhost, which is not reachable from here.
+      # To use the db service instead: postgres://simlife:simlife@db:5432/simlife
+      DATABASE_URL: ""
+    volumes:
+      - prime-data:/data
+    # Lets OLLAMA_BASE_URL / OPENAI_COMPAT_BASE_URL reach a model server on the
+    # host as http://host.docker.internal:<port> (Linux needs this line).
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped
+
   db:
     image: postgres:17-alpine
+    profiles: ["postgres"]
     environment:
       POSTGRES_USER: simlife
       POSTGRES_PASSWORD: simlife
@@ -19,4 +50,5 @@ services:
       retries: 10
 
 volumes:
+  prime-data:
   simlife-db:

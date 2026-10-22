@@ -1,0 +1,27 @@
+// Prime Council dev container: VS Code "Reopen in Container" or GitHub Codespaces.
+// Starts in labelled demo mode with the embedded database, so no keys are needed.
+// Access control is unchanged: src/proxy.ts still refuses requests that are not
+// addressed to localhost unless SIMLIFE_ACCESS_TOKEN is set (see README → Dev container).
+{
+  "name": "Prime Council",
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:1-22-bookworm",
+  "forwardPorts": [3000],
+  "portsAttributes": {
+    "3000": { "label": "Prime Council", "onAutoForward": "openBrowser" }
+  },
+  "containerEnv": {
+    "NEXT_TELEMETRY_DISABLED": "1"
+  },
+  "postCreateCommand": "npm ci --no-audit --no-fund",
+  "postAttachCommand": {
+    "app": "npm run dev:demo"
+  },
+  "customizations": {
+    "codespaces": {
+      "openFiles": ["README.md"]
+    },
+    "vscode": {
+      "extensions": ["dbaeumer.vscode-eslint", "bradlc.vscode-tailwindcss"]
+    }
+  }
+}

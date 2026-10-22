@@ -1,0 +1,97 @@
+name: Docker
+
+# Proves the one-command start works: build the image, start it with
+# `docker compose up`, and run one demo council session end to end.
+on:
+  pull_request:
+    paths:
+      - Dockerfile
+      - .dockerignore
+      - docker-compose.yml
+      - package-lock.json
+      - .github/workflows/docker.yml
+  push:
+    branches: [main]
+    paths:
+      - Dockerfile
+      - .dockerignore
+      - docker-compose.yml
+      - package-lock.json
+  workflow_dispatch:
+
+concurrency:
+  group: docker-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  compose:
+    name: docker compose up (demo mode)
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Postgres service stays opt-in
+        run: |
+          services=$(docker compose config --services)
+          echo "$services"
+          test "$services" = "app"
+
+      - name: Build and start
+        run: docker compose up --build --detach --wait --wait-timeout 180 app
+
+      - name: Status says demo + embedded database + local-only
+        run: |
+          status=$(curl -fsS http://localhost:3000/api/status)
+          echo "$status"
+          echo "$status" | jq -e '.database == "embedded" and .access == "local-only" and .seats.total > 0 and .seats.simulated == .seats.total'
+
+      - name: Home page renders
+        run: curl -fsS http://localhost:3000/ | grep -q "Prime Council"
+
+      - name: A demo council session completes
+        run: |
+          id=$(curl -fsS -X POST http://localhost:3000/api/sessions \
+            -H 'content-type: application/json' -H 'x-simlife-request: 1' \
+            -d '{"question":"What should a new council decide first?"}' | jq -r .id)
+          echo "session $id"
+          for i in $(seq 1 60); do
+            state=$(curl -fsS "http://localhost:3000/api/sessions/$id" | jq -r '.session.status')
+            echo "status: $state"
+            if [ "$state" = "completed" ]; then exit 0; fi
+            if [ "$state" = "failed" ] || [ "$state" = "stopped" ]; then exit 1; fi
+            sleep 3
+          done
+          exit 1
+
+      - name: Data survives a restart (named volume)
+        run: |
+          before=$(curl -fsS http://localhost:3000/api/sessions | jq '.sessions | length')
+          docker compose restart app
+          docker compose up --detach --wait --wait-timeout 120 app
+          after=$(curl -fsS http://localhost:3000/api/sessions | jq '.sessions | length')
+          echo "sessions before=$before after=$after"
+          test "$before" -ge 1 && test "$before" = "$after"
+
+      - name: Requests to a non-loopback host are refused
+        run: |
+          code=$(curl -s -o /dev/null -w '%{http_code}' -H 'Host: example.com' http://localhost:3000/api/status)
+          echo "status code: $code"
+          test "$code" = "403"
+
+      - name: No .env file in the image
+        run: |
+          docker compose run --rm --no-deps --entrypoint sh app -c 'ls -a /app | grep -E "^\.env" || true' > envfiles.txt
+          cat envfiles.txt
+          test "$(grep -v '^\.env\.example$' envfiles.txt | wc -l)" = "0"
+
+      - name: Logs
+        if: always()
+        run: docker compose logs app --tail 200
+
+      - name: Clean up
+        if: always()
+        run: docker compose down --volumes

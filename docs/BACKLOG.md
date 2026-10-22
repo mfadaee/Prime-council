@@ -23,6 +23,16 @@ Anything touching secrets, authentication, spending permissions, destructive mig
 - [x] **low/auto** — Link world-origin council sessions back to the world docket from the session header.
 - [ ] **review** — Model-written project pitches for inhabitants (budgeted under the background scope).
 
+### Adoption (time to first run)
+
+- [x] **review** — One-command Docker start: a `Dockerfile` (multi-stage, `next start -H 0.0.0.0 -p 3000` inside the container only) plus an `app` service in `docker-compose.yml` published on `127.0.0.1:3000`, demo mode by default. Browser requests still arrive as `localhost:3000`, so the loopback check in `src/proxy.ts` is unchanged. Review: changes the bind address inside the container.
+- [x] **review** — Dev container (`.devcontainer/devcontainer.json`: Node 22, `npm ci`, forward 3000, `npm run dev:demo`). Works as-is in local VS Code. GitHub Codespaces forwards requests with a `*.app.github.dev` host, which `src/proxy.ts` refuses without `SIMLIFE_ACCESS_TOKEN`, so document that step rather than loosening the check.
+- [ ] **review** — Public read-only demo mode (`SIMLIFE_PUBLIC_DEMO=1`): forces the demo provider, never reads provider keys, allows only starting demo sessions and viewing, with the existing rate limits. This is what a hosted live demo would need. Touches access control, so review.
+- [ ] **review** — `npx` launcher (`bin` entry that runs a prebuilt app in demo mode). Needs publishing to npm, which the owner does.
+- [ ] **review** — MCP server mode: expose "ask the council" as an MCP tool so other agents can convene the Primes. Bounded by the existing budget guard.
+- [ ] **low/auto** — Markdown export of a session in the app (`GET /api/sessions/[id]/export.md` + a button on the session page), built from the stored `session_events` with the same reducer used for replay. The live demo already has this (`sessionMarkdown()` in `index.html`); a real-provider export is what makes sessions worth sharing and lets `examples/` hold real council transcripts.
+- [ ] **low/auto** — `.env.example`: commented OpenAI-compatible presets for hosted providers (base URL + model variable names only), each base URL checked against the provider's own docs.
+
 ## Done
 
 Completed items are recorded in [`data/improvements.json`](../data/improvements.json) and shown at `/improvements`.
